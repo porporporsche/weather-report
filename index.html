@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EEF2F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F161B" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>天気と気圧</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%233346A8'/%3E%3Cpath d='M9 19a10 10 0 0 1 14 0' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M16 19l4-6' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: phone-first single column. GPS location is the hero, pressure forecast directly under it, cities behind one switcher */
+:root{
+  --bg:#EEF2F4; --surface:#FFFFFF; --ink:#14222C; --muted:#5B6B76; --line:#D6DEE3;
+  --baro:#3346A8; --baro-soft:#E3E7F8; --hot:#C2410C; --cold:#1D5FD1; --rain:#1F7FA8;
+  --hi:#B42318; --hi-bg:#FDE8E6; --mid:#9A6200; --mid-bg:#FBF0D9; --lo:#2F7D4A; --lo-bg:#E2F3E7;
+  --sun:#E0A100; --cloud:#93A3AE; --hero:#DCE5EA;
+  --m1:#3346A8; --m2:#C2410C; --m3:#2F7D4A; --m4:#8A4FBF;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0F161B; --surface:#172129; --ink:#E4EBEF; --muted:#93A3AE; --line:#2A3740;
+  --baro:#97A6F5; --baro-soft:#232C52; --hot:#FB8A57; --cold:#7DAAF7; --rain:#5CC0E6;
+  --hi:#FF8A80; --hi-bg:#3A1C1A; --mid:#F2BE5C; --mid-bg:#33280F; --lo:#7FD39A; --lo-bg:#16301F;
+  --sun:#F5C542; --cloud:#7C8D99; --hero:#1B2730;
+  --m1:#97A6F5; --m2:#FB8A57; --m3:#7FD39A; --m4:#D3A6FF; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(40px,env(safe-area-inset-bottom));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+[hidden]{display:none!important}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.label{font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:500}
+.sub{color:var(--muted);font-size:12.5px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--baro);outline-offset:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.place{display:flex;align-items:center;gap:6px;min-width:0;flex:1}
+.place h1{margin:0;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pin{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--baro);color:var(--surface);white-space:nowrap}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.away{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--mid-bg);border-radius:8px;padding:8px 12px;font-size:13.5px}
+.away button{border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700}
+.msg{padding:10px 14px;border-radius:10px;background:var(--mid-bg);font-size:13.5px}
+
+.hero{background:var(--hero);border-radius:14px;padding:18px;display:grid;gap:14px}
+.now{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.now-temp{font-size:60px;font-weight:500;line-height:.95;letter-spacing:-.03em}
+.now-temp small{font-size:24px;vertical-align:top}
+.now-phrase{font-size:18px;font-weight:700;display:flex;align-items:center;gap:6px}
+.now-meta{font-size:13px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.baro{background:var(--surface);border-radius:10px;padding:12px 14px;display:grid;gap:10px;min-width:0}
+.baro-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.baro-val{font-size:32px;font-weight:600;color:var(--baro);line-height:1}
+.baro-val small{font-size:14px;font-weight:500;margin-left:2px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.chip.down,.chip.大{background:var(--hi-bg);color:var(--hi)} .chip.up,.chip.小{background:var(--lo-bg);color:var(--lo)} .chip.flat{background:var(--baro-soft);color:var(--baro)} .chip.中{background:var(--mid-bg);color:var(--mid)}
+.pchart svg{width:100%;height:auto;display:block}
+.pchart text{font-family:var(--f-num);font-size:10px;fill:var(--muted)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+
+.sec{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.nowrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:10px;align-items:start}
+.nowrow.big{grid-template-columns:1fr}
+.nowrow>.sec{min-width:0}
+.hours{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 0;padding:6px 2px}
+.hours .hr{padding:4px 0;gap:1px;min-width:0;font-size:12px}
+.hours .hr .t,.hours .hr .p,.hours .hr .hp{font-size:10.5px}
+.radar{padding:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr);min-width:0}
+.week,.week details{min-width:0}
+#rmap{height:196px;width:100%;background:var(--bg)}
+.nowrow.big #rmap{height:min(70vh,460px)}
+.rbar{display:flex;align-items:center;gap:6px;padding:6px 8px;border-top:1px solid var(--line);font-size:12px}
+.rbar button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 9px;font-size:12px;flex:none}
+.rbar input{flex:1;min-width:0;accent-color:var(--baro)}
+.rtime{font-family:var(--f-num);font-size:11.5px;white-space:nowrap}
+.rtime.fc{color:var(--hot)}
+.rnote{padding:0 8px 8px;font-size:11.5px;color:var(--muted)}
+.rnote b{color:var(--rain)}
+.leaflet-container{font-family:var(--f-body)}
+.leaflet-control-attribution{font-size:8.5px!important;line-height:1.3!important;max-width:100%;white-space:normal}
+@media (max-width:560px){.nowrow:not(.big) .leaflet-control-zoom{display:none} .nowrow:not(.big) .rbar input{display:none} .nowrow .hsub{display:none}}
+.dh{overflow-x:auto;display:flex;border:1px solid var(--line);border-radius:8px;padding:4px 2px;margin-bottom:10px}
+.dh .hr{flex:0 0 54px}
+.dh .w{font-size:10px;color:var(--muted);white-space:nowrap}
+.more{justify-self:start;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12px}
+.week details[open]>summary{background:var(--baro-soft)}
+.hr{flex:0 0 58px;display:grid;justify-items:center;gap:2px;padding:6px 0;font-size:12.5px}
+.hr .t{color:var(--muted);font-size:11.5px}
+.hr .tp{font-weight:600}
+.hr .p{color:var(--rain);font-size:11.5px}
+.hr .hp{color:var(--baro);font-size:11px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:440px){.pair{grid-template-columns:1fr}}
+.day{padding:12px 14px;display:grid;gap:8px;min-width:0}
+.day .wx{display:flex;align-items:center;gap:8px;font-weight:700}
+.temps{font-size:24px;font-weight:600;line-height:1}
+.h{color:var(--hot)} .l{color:var(--cold)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.week details{border-bottom:1px solid var(--line)} .week details:last-child{border-bottom:0}
+.week summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:50px 28px 1fr auto;align-items:center;gap:10px;padding:9px 12px;font-size:13.5px}
+.week summary::-webkit-details-marker{display:none}
+.d{font-weight:700;line-height:1.15} .d small{display:block;font-weight:400;font-size:11.5px;color:var(--muted)}
+.d.sat small{color:var(--cold)} .d.sun small{color:var(--hi)}
+.mid{display:grid;gap:3px;min-width:0}
+.range{display:grid;grid-template-columns:28px 1fr 28px;align-items:center;gap:6px;min-width:0}
+.track{position:relative;height:6px;background:var(--bg);border-radius:999px}
+.track b{position:absolute;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--cold),var(--hot))}
+.meta{font-size:11.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.meta .p{color:var(--rain);font-weight:600}
+.agree.split{color:var(--mid);font-weight:700}
+.right{display:grid;justify-items:end;gap:2px}
+.detail{padding:2px 12px 12px;overflow-x:auto}
+.detail table{border-collapse:collapse;width:100%;font-size:12.5px}
+.detail th,.detail td{text-align:left;padding:4px 6px;border-bottom:1px dashed var(--line);white-space:nowrap}
+.detail th{color:var(--muted);font-weight:500}
+
+.sheet{padding:14px;display:grid;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13.5px}
+.chips button[aria-current="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.search{display:flex;gap:6px}
+.search input{flex:1;min-width:0;font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.search button{border:0;background:var(--baro);color:var(--surface);border-radius:8px;padding:7px 12px;font-weight:700}
+.result{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;font-size:13.5px}
+.result button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12.5px}
+.skel{color:var(--muted);font-size:13px;padding:14px}
+.foot{font-size:12px;color:var(--muted);display:grid;gap:4px}
+.foot a{color:var(--baro)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="place"><span class="pin" id="pin">◉ 現在地</span><h1 id="placeName">位置を取得中…</h1></div>
+    <button class="ghost" id="refreshBtn" aria-label="現在地と予報を更新">↻ 更新</button>
+    <button class="ghost" id="switchBtn" aria-expanded="false" aria-controls="sheet">都市 ▾</button>
+  </div>
+  <div class="away" id="away" hidden><span id="awayText"></span><button id="backHome">◉ 現在地に戻る</button></div>
+
+  <section class="card sheet" id="sheet" hidden>
+    <form class="search" id="searchForm"><input id="searchInput" placeholder="都市名で検索（例: 京都、Paris）" autocomplete="off"><button type="submit">検索</button></form>
+    <div id="searchOut"></div>
+    <div class="sec"><span class="label">日本</span><div class="chips" id="chipsJP"></div></div>
+    <div class="sec"><span class="label">世界</span><div class="chips" id="chipsWorld"></div></div>
+  </section>
+
+  <div id="pageMsg"></div>
+
+  <section class="hero">
+    <div class="now">
+      <div class="now-temp num" id="nowTemp">--<small>°</small></div>
+      <div style="display:grid;gap:4px;min-width:0">
+        <div class="now-phrase" id="nowPhrase"><span class="spin">◌</span> 取得中…</div>
+        <div class="now-meta" id="nowMeta"></div>
+      </div>
+    </div>
+    <div class="baro">
+      <div class="row"><span class="label">気圧</span><span class="sub" id="baroTime"></span></div>
+      <div class="baro-head"><span class="baro-val num" id="baroVal">----<small>hPa</small></span><span id="baroChips"></span></div>
+      <div class="sub" id="baroNote"></div>
+      <div class="pchart" id="pchart"></div>
+      <div class="legend" id="plegend"></div>
+    </div>
+  </section>
+
+  <div class="nowrow" id="nowrow">
+    <section class="sec">
+      <div class="row"><span class="label">これから12時間</span><span class="sub hsub">気温・降水確率・気圧</span></div>
+      <div class="card hours" id="hours"><div class="skel">読み込み中…</div></div>
+    </section>
+    <section class="sec">
+      <div class="row"><span class="label">雨雲レーダー</span><button class="ghost" id="rbig" style="padding:1px 9px;font-size:11.5px">⤢ 拡大</button></div>
+      <div class="card radar">
+        <div id="rmap" role="region" aria-label="雨雲レーダー地図"></div>
+        <div class="rbar"><button id="rplay" aria-label="再生・一時停止">▶</button><input type="range" id="rslider" min="0" max="0" value="0" aria-label="時刻"><span class="rtime" id="rtime">--:--</span></div>
+        <div class="rnote" id="rnote">読み込み中…</div>
+      </div>
+    </section>
+  </div>
+
+  <section class="sec">
+    <span class="label">今日・明日</span>
+    <div class="pair" id="twoDays"><div class="card skel">読み込み中…</div><div class="card skel">読み込み中…</div></div>
+  </section>
+
+  <section class="sec">
+    <div class="row"><span class="label">8日間（タップで予報モデル別）</span><span class="sub">気温は4モデルの中央値</span></div>
+    <div class="card week" id="week"><div class="skel">読み込み中…</div></div>
+  </section>
+
+  <footer class="foot">
+    <div id="updated"></div>
+    <div>予報: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>（CC BY 4.0）経由で 気象庁・ECMWF・NOAA GFS・ドイツ気象局 ICON のモデルを比較。地名: <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener">BigDataCloud</a>。雨雲: 日本国内は <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" rel="noopener">気象庁 高解像度降水ナウキャスト</a>、海外は <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>。地図: © OpenStreetMap contributors © CARTO。</div>
+    <div>気圧の影響度は、その日の6時間以内の気圧低下量から出した目安です（6hPa以上で大、3hPa以上で中）。</div>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const DEFAULT_HOME={lat:35.658,lon:139.751,name:"東京都港区"};
+const CITIES={
+  jp:[["東京",35.6895,139.6917],["札幌",43.0642,141.3469],["仙台",38.2682,140.8694],["名古屋",35.1815,136.9066],["大阪",34.6937,135.5023],["京都",35.0116,135.7681],["広島",34.3853,132.4553],["福岡",33.5902,130.4017],["那覇",26.2124,127.6809]],
+  world:[["ソウル",37.5665,126.978],["台北",25.033,121.5654],["上海",31.2304,121.4737],["香港",22.3193,114.1694],["バンコク",13.7563,100.5018],["シンガポール",1.3521,103.8198],["シドニー",-33.8688,151.2093],["ドバイ",25.2048,55.2708],["ロンドン",51.5072,-0.1276],["パリ",48.8566,2.3522],["ニューヨーク",40.7128,-74.006],["ロサンゼルス",34.0522,-118.2437],["ホノルル",21.3069,-157.8583]]
+};
+const MODELS=[["jma_seamless","気象庁","--m1"],["ecmwf_ifs025","ECMWF","--m2"],["gfs_seamless","GFS","--m3"],["icon_seamless","ICON","--m4"]];
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+let home=store.get("wx.home",null);   // last GPS fix {lat,lon,name}
+let view=null;                         // null = 現在地, else {lat,lon,name}
+let seq=0;
+
+/* ---------- weather codes / icons ---------- */
+function wmo(c){c=+c;
+  if(c===0)return["快晴","sun"]; if(c===1)return["晴れ","sun"]; if(c===2)return["晴れ時々くもり","part"]; if(c===3)return["くもり","cloud"];
+  if(c===45||c===48)return["霧","cloud"]; if(c>=51&&c<=57)return["霧雨","rain"]; if(c>=61&&c<=67)return[c>=65?"強い雨":"雨","rain"];
+  if(c>=71&&c<=77)return["雪","snow"]; if(c>=80&&c<=82)return["にわか雨","rain"]; if(c===85||c===86)return["にわか雪","snow"];
+  if(c>=95)return["雷雨","storm"]; return["—","cloud"];}
+const P={
+  sun:'<circle cx="15" cy="15" r="6" fill="var(--sun)"/><g stroke="var(--sun)" stroke-width="2" stroke-linecap="round"><path d="M15 2v3M15 25v3M2 15h3M25 15h3M5.8 5.8l2.1 2.1M22.1 22.1l2.1 2.1M5.8 24.2l2.1-2.1M22.1 7.9l2.1-2.1"/></g>',
+  moon:'<path d="M19 5a10 10 0 1 0 6 16A8 8 0 0 1 19 5z" fill="var(--sun)"/>',
+  part:'<circle cx="20" cy="10" r="5" fill="var(--sun)"/><path d="M7 24a4.5 4.5 0 0 1 0-9 6.5 6.5 0 0 1 12.4-1.4A5 5 0 1 1 20 24z" fill="var(--cloud)"/>',
+  partn:'<path d="M22 4a6 6 0 1 0 5 9 5 5 0 0 1-5-9z" fill="var(--sun)"/><path d="M7 24a4.5 4.5 0 0 1 0-9 6.5 6.5 0 0 1 12.4-1.4A5 5 0 1 1 20 24z" fill="var(--cloud)"/>',
+  cloud:'<path d="M8 22a5 5 0 0 1 0-10 7 7 0 0 1 13.4-1.6A5.5 5.5 0 1 1 22 22z" fill="var(--cloud)"/>',
+  rain:'<path d="M8 18a5 5 0 0 1 0-10 7 7 0 0 1 13.4-1.6A5.5 5.5 0 1 1 22 18z" fill="var(--cloud)"/><g stroke="var(--rain)" stroke-width="2" stroke-linecap="round"><path d="M10 21l-1.5 4M16 21l-1.5 4M22 21l-1.5 4"/></g>',
+  storm:'<path d="M8 18a5 5 0 0 1 0-10 7 7 0 0 1 13.4-1.6A5.5 5.5 0 1 1 22 18z" fill="var(--cloud)"/><path d="M16 18l-4 6h4l-2 5 6-8h-4l2-3z" fill="var(--sun)"/>',
+  snow:'<path d="M8 18a5 5 0 0 1 0-10 7 7 0 0 1 13.4-1.6A5.5 5.5 0 1 1 22 18z" fill="var(--cloud)"/><g fill="var(--cold)"><circle cx="10" cy="23" r="1.6"/><circle cx="16" cy="26" r="1.6"/><circle cx="22" cy="23" r="1.6"/></g>'
+};
+function icon(code,size=30,night=false){let k=wmo(code)[1]; if(night&&k==="sun")k="moon"; if(night&&k==="part")k="partn";
+  return `<svg width="${size}" height="${size}" viewBox="0 0 30 30" aria-hidden="true">${P[k]}</svg>`;}
+const dirJ=d=>["北","北北東","北東","東北東","東","東南東","南東","南南東","南","南南西","南西","西南西","西","西北西","北西","北北西"][Math.round(((d%360)/22.5))%16];
+const med=a=>{a=a.filter(v=>v!=null&&!isNaN(v)).sort((x,y)=>x-y);if(!a.length)return null;const m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2};
+const R=v=>v==null?"—":Math.round(v);
+
+/* ---------- data ---------- */
+async function getJSON(url){const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}
+function fetchMain(lat,lon){
+  const u=new URL("https://api.open-meteo.com/v1/forecast");
+  Object.entries({latitude:lat,longitude:lon,timezone:"auto",forecast_days:8,wind_speed_unit:"ms",
+    current:"temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m,precipitation,is_day",
+    hourly:"temperature_2m,precipitation_probability,precipitation,weather_code,pressure_msl,is_day,wind_speed_10m,wind_direction_10m",
+    minutely_15:"precipitation",forecast_minutely_15:8,
+    daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant"
+  }).forEach(([k,v])=>u.searchParams.set(k,v));
+  return getJSON(u);
+}
+function fetchModels(lat,lon){
+  const u=new URL("https://api.open-meteo.com/v1/forecast");
+  Object.entries({latitude:lat,longitude:lon,timezone:"auto",forecast_days:8,models:MODELS.map(m=>m[0]).join(","),
+    hourly:"pressure_msl",daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum"
+  }).forEach(([k,v])=>u.searchParams.set(k,v));
+  return getJSON(u);
+}
+async function reverseName(lat,lon){
+  try{const j=await getJSON(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ja`);
+    const n=[j.principalSubdivision,j.city||j.locality].filter(Boolean);
+    const uniq=n.filter((x,i)=>n.indexOf(x)===i);
+    return uniq.join(" ")||null;}catch(e){return null}
+}
+function getGPS(){
+  return new Promise((res,rej)=>{
+    if(!("geolocation" in navigator))return rej({code:"unsupported"});
+    navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(3),lon:+p.coords.longitude.toFixed(3)}),e=>rej(e),{enableHighAccuracy:false,timeout:10000,maximumAge:600000});
+  });
+}
+
+/* ---------- pressure analysis ---------- */
+function dayIndexes(times){const m={};times.forEach((t,i)=>{const d=t.slice(0,10);(m[d]=m[d]||[]).push(i)});return m;}
+function dayPressure(times,p){
+  const out={};const byDay=dayIndexes(times);
+  for(const [d,idx] of Object.entries(byDay)){
+    const vals=idx.map(i=>p[i]).filter(v=>v!=null);
+    let drop=0;
+    idx.forEach(i=>{for(let k=1;k<=6;k++){const j=i-k;if(j<0||p[j]==null||p[i]==null)continue;drop=Math.max(drop,p[j]-p[i]);}});
+    out[d]={min:vals.length?Math.min(...vals):null,max:vals.length?Math.max(...vals):null,drop,level:drop>=6?"大":drop>=3?"中":"小",
+      trend:(p[idx[idx.length-1]]??0)-(p[idx[0]]??0)};
+  }
+  return out;
+}
+
+/* ---------- render ---------- */
+function render(main,mods,place){
+  const c=main.current,h=main.hourly,d=main.daily;
+  const [phrase]=wmo(c.weather_code);
+  $("nowTemp").innerHTML=`${R(c.temperature_2m)}<small>°</small>`;
+  $("nowPhrase").innerHTML=`${icon(c.weather_code,26,!c.is_day)}${esc(phrase)}`;
+  $("nowMeta").innerHTML=[`体感 ${R(c.apparent_temperature)}°`,`湿度 ${R(c.relative_humidity_2m)}%`,`風 ${dirJ(c.wind_direction_10m)} ${c.wind_speed_10m!=null?c.wind_speed_10m.toFixed(1):"—"}m/s`,c.precipitation?`降水 ${c.precipitation}mm`:""].filter(Boolean).map(s=>`<span>${s}</span>`).join("");
+
+  // now index in hourly
+  const nowKey=c.time.slice(0,13);
+  let ni=h.time.findIndex(t=>t.slice(0,13)===nowKey); if(ni<0)ni=0;
+  const p=h.pressure_msl, hp=Math.round(c.pressure_msl);
+  const p3=p[ni+3]??null, pm3=p[ni-3]??null;
+  const tr=p3!=null?p3-c.pressure_msl:0;
+  const trend=tr<=-1?"down":tr>=1?"up":"flat";
+  const dp=dayPressure(h.time,p);
+  const today=d.time[0];
+  $("baroVal").innerHTML=`${hp}<small>hPa</small>`;
+  $("baroTime").textContent=`${c.time.slice(11,16)} 現在（現地時刻）`;
+  $("baroChips").innerHTML=`<span class="chip ${trend}">${{down:"↘ 下降中",up:"↗ 上昇中",flat:"→ 横ばい"}[trend]}</span> <span class="chip ${dp[today].level}">今日の影響度 ${dp[today].level}</span>`;
+  const next24=p.slice(ni,ni+25).filter(v=>v!=null);
+  const mn=Math.min(...next24),mx=Math.max(...next24),mnI=ni+p.slice(ni,ni+25).indexOf(mn);
+  $("baroNote").textContent=`3時間後 ${p3!=null?Math.round(p3):"—"}hPa（${tr>=0?"+":""}${tr.toFixed(1)}）・24時間の幅 ${Math.round(mn)}〜${Math.round(mx)}hPa、最低は${h.time[mnI].slice(11,13)}時ごろ`
+    +(pm3!=null?` ・ 3時間前比 ${(c.pressure_msl-pm3>=0?"+":"")}${(c.pressure_msl-pm3).toFixed(1)}`:"");
+  drawPressure(h.time,p,mods,ni);
+
+  // hours
+  $("hours").innerHTML=h.time.slice(ni,ni+12).map((t,k)=>{const i=ni+k;return `<div class="hr"><span class="t">${k===0?"今":t.slice(11,13)+"時"}</span>${icon(h.weather_code[i],22,!h.is_day[i])}<span class="tp num">${R(h.temperature_2m[i])}°</span><span class="p num">${h.precipitation_probability[i]??"—"}%</span><span class="hp num">${R(p[i])}</span></div>`}).join("");
+  rainNote(main);
+
+  // per-model daily
+  const md=(key,i)=>{const o={};MODELS.forEach(([m])=>{o[m]=mods.daily[`${key}_${m}`]?.[i]??null});return o;};
+  const mp={};MODELS.forEach(([m])=>{const arr=mods.hourly[`pressure_msl_${m}`];if(arr)mp[m]=dayPressure(mods.hourly.time,arr)});
+  const days=d.time.map((t,i)=>{
+    const hiM=md("temperature_2m_max",i),loM=md("temperature_2m_min",i);
+    const his=[d.temperature_2m_max[i],...Object.values(hiM)],los=[d.temperature_2m_min[i],...Object.values(loM)];
+    const hv=his.filter(v=>v!=null);
+    return {t,i,code:d.weather_code[i],hi:med(his),lo:med(los),pop:d.precipitation_probability_max[i],rain:d.precipitation_sum[i],
+      wind:d.wind_speed_10m_max[i],wdir:d.wind_direction_10m_dominant[i],press:dp[t]||{},
+      spread:hv.length?Math.max(...hv)-Math.min(...hv):0,
+      models:MODELS.map(([m,label])=>({label,code:md("weather_code",i)[m],hi:hiM[m],lo:loM[m],rain:md("precipitation_sum",i)[m],pr:mp[m]&&mp[m][t]}))};
+  });
+  const wd=t=>"日月火水木金土"[new Date(t+"T12:00:00").getDay()];
+  const md2=t=>`${+t.slice(5,7)}/${+t.slice(8,10)}`;
+  $("twoDays").innerHTML=days.slice(0,2).map((x,i)=>`<article class="card day">
+    <span class="label">${i?"明日":"今日"}　${md2(x.t)}（${wd(x.t)}）</span>
+    <div class="wx">${icon(x.code)}<span>${esc(wmo(x.code)[0])}</span></div>
+    <div class="temps num"><span class="h">${R(x.hi)}°</span><span class="sub" style="font-size:16px"> / </span><span class="l">${R(x.lo)}°</span></div>
+    <dl class="kv"><dt>降水確率</dt><dd class="num">${x.pop??"—"}%（${(x.rain??0).toFixed(1)}mm）</dd>
+    <dt>気圧</dt><dd class="num">${R(x.press.min)}〜${R(x.press.max)}hPa <span class="chip ${x.press.level}">影響度 ${x.press.level}</span></dd>
+    <dt>風</dt><dd>${dirJ(x.wdir)} 最大${x.wind!=null?x.wind.toFixed(1):"—"}m/s</dd>
+    <dt>予報の一致</dt><dd class="agree ${x.spread>=4?"split":""}">${x.spread>=4?`ばらつき大（最高気温の差 ${x.spread.toFixed(0)}℃）`:"各モデルほぼ一致"}</dd></dl>
+    <button type="button" class="more" data-open="${i}">時間ごとの予報 ▾</button></article>`).join("");
+  $("twoDays").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{const el=$("week").querySelectorAll("details")[+b.dataset.open];if(el){el.open=true;el.scrollIntoView({behavior:"smooth",block:"start"})}});
+  const wmn=Math.min(...days.map(x=>x.lo)),wmx=Math.max(...days.map(x=>x.hi)),span=Math.max(1,wmx-wmn);
+  $("week").innerHTML=days.map((x,i)=>{const w=wd(x.t);const cls=w==="土"?"sat":w==="日"?"sun":"";
+    return `<details><summary>
+      <div class="d ${cls}">${md2(x.t)}<small>${w}${i===0?" 今日":i===1?" 明日":""}</small></div>${icon(x.code,26)}
+      <div class="mid"><div class="range num"><span class="l" style="text-align:right">${R(x.lo)}°</span><span class="track"><b style="left:${(x.lo-wmn)/span*100}%;right:${100-(x.hi-wmn)/span*100}%"></b></span><span class="h">${R(x.hi)}°</span></div>
+        <div class="meta num"><span class="p">☂${x.pop??"—"}%</span><span>${esc(wmo(x.code)[0])}</span>${x.spread>=4?'<span class="agree split">ばらつき大</span>':""}</div></div>
+      <div class="right"><span class="chip ${x.press.level}">${x.press.level}</span><span class="sub num">${R(x.press.min)}–${R(x.press.max)}</span></div>
+    </summary><div class="detail">${dayHours(h,x.t,i===0?ni:0)}<table><tr><th>モデル</th><th>天気</th><th>最高</th><th>最低</th><th>雨量</th><th>気圧</th></tr>
+      ${x.models.map(m=>`<tr><td>${m.label}</td><td>${m.code!=null?esc(wmo(m.code)[0]):"—"}</td><td class="num h">${R(m.hi)}</td><td class="num l">${R(m.lo)}</td><td class="num">${m.rain!=null?m.rain.toFixed(1):"—"}</td><td class="num">${m.pr?R(m.pr.min)+"–"+R(m.pr.max):"—"}</td></tr>`).join("")}
+    </table><div class="sub" style="margin-top:6px">気圧の最大6時間低下 ${x.press.drop!=null?x.press.drop.toFixed(1):"—"}hPa</div></div></details>`}).join("");
+}
+
+function dayHours(h,ymd,from){
+  const idx=[];h.time.forEach((t,i)=>{if(t.slice(0,10)===ymd&&i>=from)idx.push(i)});
+  if(!idx.length)return"";
+  return `<div class="label" style="margin:2px 0 4px">時間ごと</div><div class="dh">`+idx.map(i=>`<div class="hr"><span class="t">${h.time[i].slice(11,13)}時</span>${icon(h.weather_code[i],22,!h.is_day[i])}<span class="tp num">${R(h.temperature_2m[i])}°</span><span class="p num">☂${h.precipitation_probability[i]??"—"}%</span><span class="w num">${h.precipitation&&h.precipitation[i]?h.precipitation[i].toFixed(1)+"mm":"&nbsp;"}</span><span class="w">${h.wind_direction_10m?dirJ(h.wind_direction_10m[i])+" "+R(h.wind_speed_10m[i]):""}</span><span class="hp num">${R(h.pressure_msl[i])}</span></div>`).join("")+`</div>`;
+}
+function rainNote(main){
+  const m=main.minutely_15; let txt="";
+  if(m&&m.precipitation){
+    const now=main.current.time; const arr=m.time.map((t,i)=>[t,m.precipitation[i]]).filter(([t])=>t>=now.slice(0,16)).slice(0,8);
+    const wet=arr.filter(a=>a[1]>=0.1);
+    if(!arr.length) txt="";
+    else if(!wet.length) txt="この先2時間、雨は予想されていません。";
+    else if(arr[0][1]>=0.1){const stop=arr.find(a=>a[1]<0.1);txt=`<b>雨が降っています</b>。${stop?stop[0].slice(11,16)+"ごろ弱まる見込み":"2時間ほど続く見込み"}。`}
+    else txt=`<b>${wet[0][0].slice(11,16)}ごろから雨</b>の見込み（最大 ${Math.max(...wet.map(a=>a[1])).toFixed(1)}mm/15分）。`;
+  }
+  RAINTXT=txt; if(RADAR.src) $("rnote").innerHTML=txt+(txt?" ":"")+`<span>${RADAR.src}</span>`; else $("rnote").innerHTML=txt||"";
+}
+
+/* ---------- 雨雲レーダー ---------- */
+let RAINTXT="";
+const RADAR={map:null,base:null,dot:null,layers:[],frames:[],idx:0,timer:null,src:"",dark:null};
+const isDark=()=>window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches;
+function jstLabel(ms){const d=new Date(ms);return d.toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});}
+async function radarFrames(lat,lon){
+  const inJapan=lat>20&&lat<46.5&&lon>122&&lon<154.5;
+  if(inJapan){
+    try{
+      const [n1,n2]=await Promise.all([getJSON("https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json"),getJSON("https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N2.json")]);
+      const toMs=s=>Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(8,10),+s.slice(10,12));
+      const has=x=>!x.elements||x.elements.includes("hrpns");
+      const past=n1.filter(has).sort((a,b)=>a.validtime.localeCompare(b.validtime)).slice(-13).filter((_,i,a)=>(a.length-1-i)%2===0);
+      const fc=n2.filter(has).filter(x=>x.validtime>x.basetime).sort((a,b)=>a.validtime.localeCompare(b.validtime)).filter((_,i)=>i%2===1).slice(0,6);
+      const f=[...past.map(x=>({...x,fc:false})),...fc.map(x=>({...x,fc:true}))].map(x=>({
+        url:`https://www.jma.go.jp/bosai/jmatile/data/nowc/${x.basetime}/none/${x.validtime}/surf/hrpns/{z}/{x}/{y}.png`,
+        t:toMs(x.validtime),fc:x.fc,maxNative:10}));
+      if(f.length){RADAR.src="出典: 気象庁 ナウキャスト";return f;}
+    }catch(e){ /* fall back */ }
+  }
+  const j=await getJSON("https://api.rainviewer.com/public/weather-maps.json");
+  const past=(j.radar&&j.radar.past)||[], fc=(j.radar&&j.radar.nowcast)||[];
+  RADAR.src="出典: RainViewer";
+  return [...past.slice(-7).map(x=>({...x,fc:false})),...fc.map(x=>({...x,fc:true}))].map(x=>({url:`${j.host}${x.path}/256/{z}/{x}/{y}/2/1_1.png`,t:x.time*1000,fc:x.fc,maxNative:7}));
+}
+function showFrame(i){
+  const F=RADAR.frames; if(!F.length)return;
+  RADAR.idx=(i+F.length)%F.length;
+  RADAR.layers.forEach((l,k)=>l.setOpacity(k===RADAR.idx?0.72:0));
+  const f=F[RADAR.idx]; const el=$("rtime");
+  el.textContent=`${jstLabel(f.t)} ${f.fc?"予報":"実況"}`; el.classList.toggle("fc",!!f.fc);
+  $("rslider").value=RADAR.idx;
+}
+function stopAnim(){clearInterval(RADAR.timer);RADAR.timer=null;$("rplay").textContent="▶";}
+function playAnim(){stopAnim();RADAR.timer=setInterval(()=>showFrame(RADAR.idx+1),700);$("rplay").textContent="❚❚";}
+async function loadRadar(lat,lon){
+  if(!window.L){$("rnote").textContent="地図を読み込めませんでした。通信状態を確認して更新してください。";return;}
+  const dark=isDark();
+  if(!RADAR.map){
+    RADAR.map=L.map("rmap",{zoomControl:false,attributionControl:false,minZoom:4,maxZoom:11});
+    L.control.attribution({prefix:false}).addTo(RADAR.map);
+    L.control.zoom({position:"topright"}).addTo(RADAR.map);
+    $("rplay").onclick=()=>RADAR.timer?stopAnim():playAnim();
+    $("rslider").oninput=e=>{stopAnim();showFrame(+e.target.value)};
+    $("rbig").onclick=()=>{const b=$("nowrow").classList.toggle("big");$("rbig").textContent=b?"⤡ 戻す":"⤢ 拡大";setTimeout(()=>RADAR.map.invalidateSize(),60);};
+  }
+  if(RADAR.dark!==dark){
+    if(RADAR.base)RADAR.base.remove();
+    RADAR.base=L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark?"dark_all":"light_all"}/{z}/{x}/{y}{r}.png`,{subdomains:"abcd",maxZoom:19,attribution:'© OpenStreetMap © CARTO'}).addTo(RADAR.map);
+    RADAR.dark=dark;
+  }
+  RADAR.map.setView([lat,lon],$("rmap").clientWidth<260?7:8);
+  if(RADAR.dot)RADAR.dot.remove();
+  RADAR.dot=L.circleMarker([lat,lon],{radius:6,color:"#fff",weight:2,fillColor:"#C2410C",fillOpacity:1}).addTo(RADAR.map);
+  stopAnim(); RADAR.layers.forEach(l=>l.remove()); RADAR.layers=[]; RADAR.frames=[];
+  $("rnote").innerHTML=RAINTXT||"雨雲を読み込み中…";
+  try{
+    const F=await radarFrames(lat,lon);
+    RADAR.frames=F;
+    RADAR.layers=F.map(f=>L.tileLayer(f.url,{opacity:0,maxNativeZoom:f.maxNative,maxZoom:11,zIndex:5,attribution:RADAR.src.replace("出典: ","")}).addTo(RADAR.map));
+    $("rslider").max=Math.max(0,F.length-1);
+    const lastPast=F.map(f=>f.fc).lastIndexOf(false);
+    showFrame(lastPast>=0?lastPast:0);
+    $("rnote").innerHTML=(RAINTXT?RAINTXT+" ":"")+`<span>${RADAR.src}</span>`;
+  }catch(e){ $("rnote").innerHTML=(RAINTXT?RAINTXT+" ":"")+"雨雲データを取得できませんでした。"; }
+  setTimeout(()=>RADAR.map.invalidateSize(),50);
+}
+
+function drawPressure(times,p,mods,ni){
+  const W=680,H=190,L=40,Rr=10,T=12,B=26;
+  const series=[{name:"標準",color:"var(--ink)",w:2.4,data:p}];
+  MODELS.forEach(([m,label,col])=>{const a=mods.hourly[`pressure_msl_${m}`];if(a&&a.some(v=>v!=null))series.push({name:label,color:`var(${col})`,w:1.2,data:a,dash:"4 3"})});
+  const all=series.flatMap(s=>s.data).filter(v=>v!=null);
+  let lo=Math.floor(Math.min(...all)/2)*2-1,hi=Math.ceil(Math.max(...all)/2)*2+1;
+  const n=times.length,X=i=>L+(W-L-Rr)*i/(n-1),Y=v=>T+(H-T-B)*(hi-v)/(hi-lo);
+  let g="";
+  const step=(hi-lo)>16?6:(hi-lo)>8?4:2;
+  for(let v=Math.ceil(lo/step)*step;v<=hi;v+=step)g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-5}" y="${Y(v)+3}" text-anchor="end">${v}</text>`;
+  if(lo<1013&&hi>1013)g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(1013)}" y2="${Y(1013)}" stroke="var(--muted)" stroke-dasharray="2 4"/>`;
+  times.forEach((t,i)=>{if(t.slice(11,13)==="00"){g+=`<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${H-B}" stroke="var(--line)"/>`;
+    if(i<n-12)g+=`<text x="${X(i)+3}" y="${H-10}">${+t.slice(5,7)}/${+t.slice(8,10)}</text>`}});
+  g+=`<rect x="${L}" y="${T}" width="${Math.max(0,X(ni)-L)}" height="${H-T-B}" fill="var(--bg)" opacity=".6"/>`;
+  series.slice().reverse().forEach(s=>{let d="",pen=false;s.data.forEach((v,i)=>{if(v==null){pen=false;return}d+=(pen?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1);pen=true});
+    g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w}" ${s.dash?`stroke-dasharray="${s.dash}"`:""} stroke-linejoin="round"/>`});
+  g+=`<line x1="${X(ni)}" x2="${X(ni)}" y1="${T}" y2="${H-B}" stroke="var(--hot)" stroke-width="1.5"/><circle cx="${X(ni)}" cy="${Y(p[ni])}" r="4" fill="var(--hot)"/><text x="${X(ni)+5}" y="${T+10}" style="fill:var(--hot)">今</text>`;
+  $("pchart").innerHTML=`<div class="label" style="margin-bottom:4px">8日間の気圧予報（hPa）</div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="8日間の気圧予報">${g}</svg>`;
+  $("plegend").innerHTML=series.map(s=>`<span><i style="background:${s.color}"></i>${s.name==="標準"?"最適ブレンド":s.name}</span>`).join("");
+}
+
+/* ---------- flow ---------- */
+function cur(){return view||home||DEFAULT_HOME}
+function header(){
+  const isHome=!view;
+  $("pin").hidden=!isHome;
+  $("placeName").textContent=cur().name;
+  $("away").hidden=isHome; if(!isHome)$("awayText").textContent=`${view.name} を表示中`;
+  document.querySelectorAll(".chips button").forEach(b=>b.setAttribute("aria-current",String(!!view&&b.dataset.name===view.name)));
+}
+function skeleton(){
+  $("nowTemp").innerHTML='--<small>°</small>';$("nowPhrase").innerHTML='<span class="spin">◌</span> 取得中…';$("nowMeta").innerHTML="";
+  $("baroVal").innerHTML='----<small>hPa</small>';$("baroChips").innerHTML="";$("baroNote").textContent="";$("pchart").innerHTML="";$("plegend").innerHTML="";
+  $("hours").innerHTML='<div class="skel">読み込み中…</div>';$("twoDays").innerHTML='<div class="card skel">読み込み中…</div><div class="card skel">読み込み中…</div>';$("week").innerHTML='<div class="skel">読み込み中…</div>';
+}
+async function loadWeather(){
+  const s=++seq,place=cur();header();
+  $("refreshBtn").innerHTML='<span class="spin">↻</span> 更新';
+  try{
+    const [main,mods]=await Promise.all([fetchMain(place.lat,place.lon),fetchModels(place.lat,place.lon).catch(()=>({daily:{},hourly:{time:[]}}))]);
+    if(s!==seq)return;
+    render(main,mods,place);
+    loadRadar(place.lat,place.lon);
+    $("updated").textContent=`取得 ${new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}（日本時間）・ 地点 ${place.lat.toFixed(2)}, ${place.lon.toFixed(2)}`;
+  }catch(e){
+    if(s!==seq)return;
+    $("pageMsg").innerHTML=`<div class="msg">予報を取得できませんでした（${esc(e.message||e)}）。通信状態を確認して「更新」を押してください。</div>`;
+    $("nowPhrase").textContent="取得できません";
+  }finally{if(s===seq)$("refreshBtn").textContent="↻ 更新";}
+}
+async function locate(){
+  $("pageMsg").innerHTML="";
+  try{
+    const g=await getGPS();
+    const name=await reverseName(g.lat,g.lon)||`${g.lat}, ${g.lon}`;
+    home={...g,name};store.set("wx.home",home);
+  }catch(e){
+    const why=e&&e.code===1?"位置情報の利用が許可されていません。ブラウザの設定で許可すると現在地を表示できます。":"現在地を取得できませんでした。";
+    $("pageMsg").innerHTML=`<div class="msg">${why}${home?"前回の現在地（"+esc(home.name)+"）":"東京都港区"}を表示しています。</div>`;
+  }
+}
+async function goHome(refreshGPS){view=null;skeleton();header();if(refreshGPS){$("placeName").textContent="位置を取得中…";await locate();}await loadWeather();}
+function goCity(c){view=c;skeleton();toggleSheet(false);window.scrollTo({top:0});$("pageMsg").innerHTML="";loadWeather();}
+
+function toggleSheet(o){$("sheet").hidden=!o;$("switchBtn").setAttribute("aria-expanded",String(o));}
+$("switchBtn").onclick=()=>toggleSheet($("sheet").hidden);
+$("backHome").onclick=()=>goHome(true);
+$("refreshBtn").onclick=()=>view?loadWeather():goHome(true);
+const chips=(list,el)=>{$(el).innerHTML=list.map(([n,la,lo])=>`<button type="button" data-name="${n}" data-lat="${la}" data-lon="${lo}">${n}</button>`).join("");
+  $(el).querySelectorAll("button").forEach(b=>b.onclick=()=>goCity({name:b.dataset.name,lat:+b.dataset.lat,lon:+b.dataset.lon}));};
+chips(CITIES.jp,"chipsJP");chips(CITIES.world,"chipsWorld");
+$("searchForm").addEventListener("submit",async ev=>{
+  ev.preventDefault();const q=$("searchInput").value.trim();if(!q)return;
+  $("searchOut").innerHTML='<span class="sub"><span class="spin">◌</span> 検索中…</span>';
+  try{const j=await getJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=ja&format=json`);
+    const r=j.results||[];
+    if(!r.length){$("searchOut").innerHTML='<span class="sub">見つかりませんでした。別の表記で試してください。</span>';return}
+    $("searchOut").innerHTML=r.map((x,i)=>`<div class="result"><span>${esc(x.name)}<span class="sub"> ${esc([x.admin1,x.country].filter(Boolean).join("・"))}</span></span><button type="button" data-i="${i}">表示</button></div>`).join("");
+    $("searchOut").querySelectorAll("button").forEach(b=>b.onclick=()=>{const x=r[+b.dataset.i];goCity({name:x.name,lat:+x.latitude.toFixed(3),lon:+x.longitude.toFixed(3)})});
+  }catch(e){$("searchOut").innerHTML='<span class="sub">検索できませんでした。通信状態を確認してください。</span>'}
+});
+// 画面に戻ってきたとき、30分以上経っていれば更新
+let lastLoad=Date.now();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-lastLoad>30*60000){lastLoad=Date.now();view?loadWeather():goHome(true)}});
+
+header();
+goHome(true);
+</script>
+</body>
+</html>
