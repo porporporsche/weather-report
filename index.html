@@ -88,6 +88,8 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .rnote{padding:0 8px 8px;font-size:11.5px;color:var(--muted)}
 .rnote b{color:var(--rain)}
 .leaflet-container{font-family:var(--f-body)}
+.basemap{filter:grayscale(.85) contrast(.9) brightness(1.04)}
+@media (prefers-color-scheme: dark){.basemap{filter:invert(1) hue-rotate(180deg) grayscale(.9) brightness(.85) contrast(.85)}}
 .leaflet-control-attribution{font-size:8.5px!important;line-height:1.3!important;max-width:100%;white-space:normal}
 @media (max-width:560px){.nowrow:not(.big) .leaflet-control-zoom{display:none} .nowrow:not(.big) .rbar input{display:none} .nowrow .hsub{display:none}}
 .dh{overflow-x:auto;display:flex;border:1px solid var(--line);border-radius:8px;padding:4px 2px;margin-bottom:10px}
@@ -205,7 +207,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 
   <footer class="foot">
     <div id="updated"></div>
-    <div>予報: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>（CC BY 4.0）経由で 気象庁・ECMWF・NOAA GFS・ドイツ気象局 ICON のモデルを比較。地名: <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener">BigDataCloud</a>。雨雲: 日本国内は <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" rel="noopener">気象庁 高解像度降水ナウキャスト</a>、海外は <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>。地図: © OpenStreetMap contributors © CARTO。</div>
+    <div>予報: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>（CC BY 4.0）経由で 気象庁・ECMWF・NOAA GFS・ドイツ気象局 ICON のモデルを比較。地名: <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener">BigDataCloud</a>。雨雲: 日本国内は <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" rel="noopener">気象庁 高解像度降水ナウキャスト</a>、海外は <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>。地図: © OpenStreetMap contributors。</div>
     <div>気圧の影響度は、その日の6時間以内の気圧低下量から出した目安です（6hPa以上で大、3hPa以上で中）。</div>
   </footer>
 </div>
@@ -397,7 +399,15 @@ async function radarFrames(lat,lon){
         url:`https://www.jma.go.jp/bosai/jmatile/data/nowc/${x.basetime}/none/${x.validtime}/surf/hrpns/{z}/{x}/{y}.png`,
         t:toMs(x.validtime),fc:x.fc,maxNative:10}));
       if(f.length){RADAR.src="出典: 気象庁 ナウキャスト";return f;}
-    }catch(e){ /* fall back */ }
+    }catch(e){
+      // 時刻一覧が読めないとき: 5分ごとの発表時刻を計算してタイルを直接使う（10分前を最新とみなす）
+      const pad=n=>String(n).padStart(2,"0");
+      const stamp=ms=>{const d=new Date(ms);return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00`};
+      const latest=Math.floor(Date.now()/300000)*300000-600000, F=[];
+      for(let k=-60;k<=0;k+=10){const t=latest+k*60000;F.push({url:`https://www.jma.go.jp/bosai/jmatile/data/nowc/${stamp(t)}/none/${stamp(t)}/surf/hrpns/{z}/{x}/{y}.png`,t,fc:false,maxNative:10});}
+      for(let k=10;k<=60;k+=10){const t=latest+k*60000;F.push({url:`https://www.jma.go.jp/bosai/jmatile/data/nowc/${stamp(latest)}/none/${stamp(t)}/surf/hrpns/{z}/{x}/{y}.png`,t,fc:true,maxNative:10});}
+      RADAR.src="出典: 気象庁 ナウキャスト"; return F;
+    }
   }
   const j=await getJSON("https://api.rainviewer.com/public/weather-maps.json");
   const past=(j.radar&&j.radar.past)||[], fc=(j.radar&&j.radar.nowcast)||[];
@@ -416,8 +426,7 @@ function stopAnim(){clearInterval(RADAR.timer);RADAR.timer=null;$("rplay").textC
 function playAnim(){stopAnim();RADAR.timer=setInterval(()=>showFrame(RADAR.idx+1),700);$("rplay").textContent="❚❚";}
 async function loadRadar(lat,lon){
   if(!window.L){$("rnote").textContent="地図を読み込めませんでした。通信状態を確認して更新してください。";return;}
-  const dark=isDark();
-  if(!RADAR.map){
+    if(!RADAR.map){
     RADAR.map=L.map("rmap",{zoomControl:false,attributionControl:false,minZoom:4,maxZoom:11});
     L.control.attribution({prefix:false}).addTo(RADAR.map);
     L.control.zoom({position:"topright"}).addTo(RADAR.map);
@@ -425,10 +434,9 @@ async function loadRadar(lat,lon){
     $("rslider").oninput=e=>{stopAnim();showFrame(+e.target.value)};
     $("rbig").onclick=()=>{const b=$("nowrow").classList.toggle("big");$("rbig").textContent=b?"⤡ 戻す":"⤢ 拡大";setTimeout(()=>RADAR.map.invalidateSize(),60);};
   }
-  if(RADAR.dark!==dark){
-    if(RADAR.base)RADAR.base.remove();
-    RADAR.base=L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark?"dark_all":"light_all"}/{z}/{x}/{y}{r}.png`,{subdomains:"abcd",maxZoom:19,attribution:'© OpenStreetMap © CARTO'}).addTo(RADAR.map);
-    RADAR.dark=dark;
+  if(!RADAR.base){
+    // 背景地図: OpenStreetMap（APIキー不要）。色味はCSSでテーマに合わせる
+    RADAR.base=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,className:"basemap",attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(RADAR.map);
   }
   RADAR.map.setView([lat,lon],$("rmap").clientWidth<260?7:8);
   if(RADAR.dot)RADAR.dot.remove();

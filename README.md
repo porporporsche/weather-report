@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/34303961/README.md)
 # 天気と気圧
 
 現在地（GPS）の天気・気圧・雨雲レーダーを1画面で見られる、1ファイルのWebページです。日本と世界の主要都市にも切り替えられます。APIキーもサーバーも要りません。
@@ -30,8 +29,8 @@
 |---|---|
 | 天気・気圧の予報 | [Open-Meteo](https://open-meteo.com/)（CC BY 4.0）。気象庁・ECMWF・NOAA GFS・DWD ICON のモデルを使用 |
 | 雨雲レーダー（日本） | [気象庁 高解像度降水ナウキャスト](https://www.jma.go.jp/bosai/nowc/) |
-| 雨雲レーダー（海外、または気象庁のデータが取れないとき） | [RainViewer](https://www.rainviewer.com/) |
-| 地図 | © OpenStreetMap contributors © CARTO |
+| 雨雲レーダー（海外） | [RainViewer](https://www.rainviewer.com/) |
+| 地図 | © OpenStreetMap contributors（APIキー不要） |
 | 地名 | [BigDataCloud](https://www.bigdatacloud.com/)、Open-Meteo Geocoding |
 | 地図の表示 | [Leaflet](https://leafletjs.com/) 1.9.4 |
 
