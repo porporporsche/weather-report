@@ -143,27 +143,81 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;animation:spin 1s linear infinite}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* ===== PC（幅1024px以上）: 2カラムのダッシュボード ===== */
+@media (hover:hover){
+  .week summary:hover{background:var(--baro-soft)}
+  .chips button:hover,.ghost:hover,.more:hover,.rbar button:hover{border-color:var(--baro);color:var(--baro)}
+}
+@media (min-width:1024px){
+  body{font-size:15.5px}
+  .wrap{max-width:1280px;position:relative;column-gap:24px;row-gap:0;
+    grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
+    grid-template-areas:"bar bar" "away away" "msg msg" "hero radar" "hours hours" "week days" "foot foot";
+    padding-top:24px}
+  .nowrow{display:contents}
+  .a-bar{grid-area:bar} .a-away{grid-area:away} .a-msg{grid-area:msg} .a-hero{grid-area:hero}
+  .a-radar{grid-area:radar} .a-hours{grid-area:hours} .a-week{grid-area:week} .a-days{grid-area:days} .a-foot{grid-area:foot}
+  .wrap>*,.nowrow>*{margin-bottom:22px}
+  .a-msg:empty{display:none}
+  .place h1{font-size:26px}
+  .pin{font-size:12.5px;padding:3px 10px}
+  /* 現在の天気: 上に現況、下に気圧（グラフを広く） */
+  .a-hero{padding:22px 24px;gap:18px;align-content:start}
+  .now{gap:22px}
+  .now-temp{font-size:80px}
+  .now-temp small{font-size:30px}
+  .now-phrase{font-size:22px}
+  .now-meta{font-size:14px;gap:16px}
+  .baro{padding:14px 18px}
+  /* 雨雲レーダー: 現況の高さに合わせて縦に伸ばす */
+  .a-radar{align-self:stretch;grid-template-rows:auto 1fr}
+  .a-radar .radar{grid-template-rows:1fr auto auto;height:100%}
+  #rmap,.nowrow.big #rmap{height:100%;min-height:340px}
+  #rbig{display:none}
+  .rbar input,.nowrow:not(.big) .rbar input{display:block}
+  .leaflet-control-zoom{display:block!important}
+  /* 12時間: 1行に12列 */
+  .hours{grid-template-columns:repeat(12,minmax(0,1fr));padding:10px 6px}
+  .hours .hr{font-size:13px;gap:3px}
+  .hours .hr .t,.hours .hr .p,.hours .hr .hp{font-size:11.5px}
+  .hsub{display:inline!important}
+  /* 今日・明日: 右カラムに縦積みで固定表示 */
+  .a-days{align-self:start;position:sticky;top:16px}
+  .pair{grid-template-columns:1fr}
+  .day{padding:16px 18px}
+  .temps{font-size:28px}
+  .week summary{grid-template-columns:64px 32px 1fr auto;padding:11px 16px;font-size:14.5px}
+  .detail{padding:4px 16px 16px}
+  .dh .hr{flex:0 0 58px}
+  .tapword{display:none}
+  /* 都市選択: ボタンの下に開くパネル */
+  .a-sheet{position:absolute;top:72px;right:max(16px,env(safe-area-inset-right));width:460px;z-index:1200;
+    box-shadow:0 12px 32px rgba(0,0,0,.18);max-height:calc(100vh - 100px);overflow:auto}
+}
+@media (min-width:1024px) and (prefers-color-scheme: dark){.a-sheet{box-shadow:0 12px 32px rgba(0,0,0,.55)}}
+@media (min-width:1440px){.wrap{max-width:1400px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="bar">
+  <div class="bar a-bar">
     <div class="place"><span class="pin" id="pin">◉ 現在地</span><h1 id="placeName">位置を取得中…</h1></div>
     <button class="ghost" id="refreshBtn" aria-label="現在地と予報を更新">↻ 更新</button>
     <button class="ghost" id="switchBtn" aria-expanded="false" aria-controls="sheet">都市 ▾</button>
   </div>
-  <div class="away" id="away" hidden><span id="awayText"></span><button id="backHome">◉ 現在地に戻る</button></div>
+  <div class="away a-away" id="away" hidden><span id="awayText"></span><button id="backHome">◉ 現在地に戻る</button></div>
 
-  <section class="card sheet" id="sheet" hidden>
+  <section class="card sheet a-sheet" id="sheet" hidden aria-label="都市を選ぶ">
     <form class="search" id="searchForm"><input id="searchInput" placeholder="都市名で検索（例: 京都、Paris）" autocomplete="off"><button type="submit">検索</button></form>
     <div id="searchOut"></div>
     <div class="sec"><span class="label">日本</span><div class="chips" id="chipsJP"></div></div>
     <div class="sec"><span class="label">世界</span><div class="chips" id="chipsWorld"></div></div>
   </section>
 
-  <div id="pageMsg"></div>
+  <div id="pageMsg" class="a-msg"></div>
 
-  <section class="hero">
+  <section class="hero a-hero">
     <div class="now">
       <div class="now-temp num" id="nowTemp">--<small>°</small></div>
       <div style="display:grid;gap:4px;min-width:0">
@@ -181,11 +235,11 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   </section>
 
   <div class="nowrow" id="nowrow">
-    <section class="sec">
+    <section class="sec a-hours">
       <div class="row"><span class="label">これから12時間</span><span class="sub hsub">気温・降水確率・気圧</span></div>
       <div class="card hours" id="hours"><div class="skel">読み込み中…</div></div>
     </section>
-    <section class="sec">
+    <section class="sec a-radar">
       <div class="row"><span class="label">雨雲レーダー</span><button class="ghost" id="rbig" style="padding:1px 9px;font-size:11.5px">⤢ 拡大</button></div>
       <div class="card radar">
         <div id="rmap" role="region" aria-label="雨雲レーダー地図"></div>
@@ -195,17 +249,17 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
     </section>
   </div>
 
-  <section class="sec">
+  <section class="sec a-days">
     <span class="label">今日・明日</span>
     <div class="pair" id="twoDays"><div class="card skel">読み込み中…</div><div class="card skel">読み込み中…</div></div>
   </section>
 
-  <section class="sec">
-    <div class="row"><span class="label">8日間（タップで予報モデル別）</span><span class="sub">気温は4モデルの中央値</span></div>
+  <section class="sec a-week">
+    <div class="row"><span class="label">8日間<span class="tapword">（タップで時間ごと・モデル別）</span></span><span class="sub">気温は4モデルの中央値</span></div>
     <div class="card week" id="week"><div class="skel">読み込み中…</div></div>
   </section>
 
-  <footer class="foot">
+  <footer class="foot a-foot">
     <div id="updated"></div>
     <div>予報: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>（CC BY 4.0）経由で 気象庁・ECMWF・NOAA GFS・ドイツ気象局 ICON のモデルを比較。地名: <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener">BigDataCloud</a>。雨雲: 日本国内は <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" rel="noopener">気象庁 高解像度降水ナウキャスト</a>、海外は <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>。地図: © OpenStreetMap contributors。</div>
     <div>気圧の影響度は、その日の6時間以内の気圧低下量から出した目安です（6hPa以上で大、3hPa以上で中）。</div>
@@ -520,7 +574,9 @@ async function goHome(refreshGPS){view=null;skeleton();header();if(refreshGPS){$
 function goCity(c){view=c;skeleton();toggleSheet(false);window.scrollTo({top:0});$("pageMsg").innerHTML="";loadWeather();}
 
 function toggleSheet(o){$("sheet").hidden=!o;$("switchBtn").setAttribute("aria-expanded",String(o));}
-$("switchBtn").onclick=()=>toggleSheet($("sheet").hidden);
+$("switchBtn").onclick=e=>{e.stopPropagation();toggleSheet($("sheet").hidden)};
+document.addEventListener("click",e=>{if(!$("sheet").hidden&&!$("sheet").contains(e.target)&&e.target!==$("switchBtn"))toggleSheet(false)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden){toggleSheet(false);$("switchBtn").focus()}});
 $("backHome").onclick=()=>goHome(true);
 $("refreshBtn").onclick=()=>view?loadWeather():goHome(true);
 const chips=(list,el)=>{$(el).innerHTML=list.map(([n,la,lo])=>`<button type="button" data-name="${n}" data-lat="${la}" data-lon="${lo}">${n}</button>`).join("");
