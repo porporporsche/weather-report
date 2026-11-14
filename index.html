@@ -19,6 +19,7 @@
   --baro:#3346A8; --baro-soft:#E3E7F8; --hot:#C2410C; --cold:#1D5FD1; --rain:#1F7FA8;
   --hi:#B42318; --hi-bg:#FDE8E6; --mid:#9A6200; --mid-bg:#FBF0D9; --lo:#2F7D4A; --lo-bg:#E2F3E7;
   --sun:#E0A100; --cloud:#93A3AE; --hero:#DCE5EA;
+  --r4:#2F9E5B; --r3:#8CC152; --r2:#E5A823; --r1:#D9534F; --run-bg:#FFFFFF;
   --m1:#3346A8; --m2:#C2410C; --m3:#2F7D4A; --m4:#8A4FBF;
   --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
@@ -29,11 +30,12 @@
   --baro:#97A6F5; --baro-soft:#232C52; --hot:#FB8A57; --cold:#7DAAF7; --rain:#5CC0E6;
   --hi:#FF8A80; --hi-bg:#3A1C1A; --mid:#F2BE5C; --mid-bg:#33280F; --lo:#7FD39A; --lo-bg:#16301F;
   --sun:#F5C542; --cloud:#7C8D99; --hero:#1B2730;
+  --r4:#4CC27E; --r3:#9BD064; --r2:#F0B940; --r1:#F07470; --run-bg:#172129;
   --m1:#97A6F5; --m2:#FB8A57; --m3:#7FD39A; --m4:#D3A6FF; color-scheme:dark}}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
-.wrap{max-width:720px;margin:0 auto;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(40px,env(safe-area-inset-bottom));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.wrap{max-width:720px;margin:0 auto;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:calc(96px + env(safe-area-inset-bottom));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 [hidden]{display:none!important}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 .label{font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:500}
@@ -51,6 +53,31 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .away button{border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700}
 .msg{padding:10px 14px;border-radius:10px;background:var(--mid-bg);font-size:13.5px}
 
+/* ランニング指数 */
+.run{background:var(--run-bg);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:14px;grid-template-columns:auto minmax(0,1fr);align-items:start}
+.run-now{display:grid;justify-items:start;gap:2px;min-width:118px}
+.run-score{font-size:52px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.run-score small{font-size:15px;color:var(--muted);font-weight:500;margin-left:2px}
+.run-lab{font-weight:700;font-size:15px;padding:2px 10px;border-radius:999px;color:#fff}
+.run-side{display:grid;gap:10px;min-width:0}
+.run-why{display:flex;flex-wrap:wrap;gap:6px}
+.why{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--bg);white-space:nowrap}
+.why b{font-family:var(--f-num);font-weight:600}
+.why.bad{background:var(--hi-bg);color:var(--hi)} .why.warn{background:var(--mid-bg);color:var(--mid)} .why.ok{background:var(--lo-bg);color:var(--lo)}
+.run-plan{grid-column:1/-1;display:grid;gap:6px}
+.run-strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;height:30px}
+.run-strip span{border-radius:3px;position:relative}
+.run-strip span.best{outline:2px solid var(--ink);outline-offset:1px;z-index:1}
+.run-axis{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);font-size:10.5px;color:var(--muted);font-family:var(--f-num)}
+.run-axis span{white-space:nowrap;overflow:visible}
+.run-best{font-size:13.5px}
+.run-best b{font-family:var(--f-num)}
+.run-tips{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+@media (max-width:560px){.tip{padding:8px 9px}.tip .v{font-size:12.5px;line-height:1.35}.tip .sub{font-size:10.5px;line-height:1.35}.run-score{font-size:44px}}
+.tip{background:var(--bg);border-radius:10px;padding:9px 12px;display:grid;gap:2px;min-width:0}
+.tip .v{font-weight:700;font-size:14px}
+.s4{background:var(--r4)} .s3{background:var(--r3)} .s2{background:var(--r2)} .s1{background:var(--r1)}
+.retry{border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:4px 12px;font-weight:700;font-size:13px;margin-left:8px}
 .hero{background:var(--hero);border-radius:14px;padding:18px;display:grid;gap:14px}
 .now{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
 .now-temp{font-size:60px;font-weight:500;line-height:.95;letter-spacing:-.03em}
@@ -64,6 +91,9 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
 .chip.down,.chip.大{background:var(--hi-bg);color:var(--hi)} .chip.up,.chip.小{background:var(--lo-bg);color:var(--lo)} .chip.flat{background:var(--baro-soft);color:var(--baro)} .chip.中{background:var(--mid-bg);color:var(--mid)}
 .pchart svg{width:100%;height:auto;display:block}
+.ctabs{display:inline-flex;gap:2px;padding:2px;border-radius:999px;background:var(--bg);justify-self:start}
+.ctabs button{border:0;background:none;border-radius:999px;padding:4px 12px;font-size:12.5px;color:var(--muted)}
+.ctabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .pchart text{font-family:var(--f-num);font-size:10px;fill:var(--muted)}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
 .legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
@@ -153,9 +183,13 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   body{font-size:15.5px}
   .wrap{max-width:1280px;position:relative;column-gap:24px;row-gap:0;
     grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
-    grid-template-areas:"bar bar" "away away" "msg msg" "hero radar" "hours hours" "week days" "foot foot";
+    grid-template-areas:"bar bar" "away away" "msg msg" "run run" "hero radar" "hours hours" "week days" "foot foot";
     padding-top:24px}
   .nowrow{display:contents}
+  .a-run{grid-area:run}
+  .run{grid-template-columns:auto minmax(0,1fr) minmax(0,1.2fr);padding:18px 22px;column-gap:28px}
+  .run-plan{grid-column:auto}
+  .run-tips{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))}
   .a-bar{grid-area:bar} .a-away{grid-area:away} .a-msg{grid-area:msg} .a-hero{grid-area:hero}
   .a-radar{grid-area:radar} .a-hours{grid-area:hours} .a-week{grid-area:week} .a-days{grid-area:days} .a-foot{grid-area:foot}
   .wrap>*,.nowrow>*{margin-bottom:22px}
@@ -197,6 +231,38 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 }
 @media (min-width:1024px) and (prefers-color-scheme: dark){.a-sheet{box-shadow:0 12px 32px rgba(0,0,0,.55)}}
 @media (min-width:1440px){.wrap{max-width:1400px}}
+
+/* ===== 下部タブ（ごはん帳と同じ操作感） ===== */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:1500;display:grid;grid-template-columns:repeat(4,1fr);max-width:720px;margin:0 auto;
+  background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-right))}
+.tabbar button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;color:var(--muted);font-size:11px;font-weight:600;min-height:50px}
+.tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button[aria-current="page"]{color:var(--baro);background:color-mix(in srgb,var(--baro) 13%,transparent)}
+.tabbar button[aria-current="page"] svg{stroke-width:2.2}
+@media (min-width:700px){.tabbar{bottom:12px;left:16px;right:16px;border:1px solid var(--line);border-radius:18px;box-shadow:0 6px 24px rgba(0,0,0,.10)}}
+.sheet-head{display:flex}
+/* スマホ・タブレット：タブで画面を切り替える */
+@media (max-width:1023px){
+  #switchBtn{display:none}
+  body:not([data-tab="now"]) .a-run, body:not([data-tab="now"]) .a-hero, body:not([data-tab="now"]) .a-hours{display:none!important}
+  body:not([data-tab="radar"]) .a-radar{display:none!important}
+  body:not([data-tab="week"]) .a-days, body:not([data-tab="week"]) .a-week, body:not([data-tab="week"]) .a-foot{display:none!important}
+  body[data-tab="city"] .a-sheet{display:grid!important}
+  body:not([data-tab="city"]) .a-sheet{display:none!important}
+  .nowrow{grid-template-columns:minmax(0,1fr)}
+  body[data-tab="week"] .nowrow, body[data-tab="city"] .nowrow{display:none}
+  #rbig{display:none}
+  body[data-tab="radar"] #rmap{height:max(320px,calc(100vh - 300px))}
+  body[data-tab="radar"] .rbar input{display:block!important}
+  body[data-tab="radar"] .leaflet-control-zoom{display:block!important}
+  body[data-tab="radar"] .rnote{font-size:13px;padding:2px 10px 10px}
+}
+/* PC：全体を1画面に並べたまま、タブは各欄へのジャンプに使う */
+@media (min-width:1024px){
+  .tabbar{max-width:440px;left:50%;right:auto;transform:translateX(-50%);width:440px}
+  .sheet-head{display:none}
+}
 </style>
 </head>
 <body>
@@ -209,6 +275,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   <div class="away a-away" id="away" hidden><span id="awayText"></span><button id="backHome">◉ 現在地に戻る</button></div>
 
   <section class="card sheet a-sheet" id="sheet" hidden aria-label="都市を選ぶ">
+    <div class="row sheet-head"><span class="label">場所を選ぶ</span><button type="button" class="ghost" id="sheetHome">◉ 現在地を表示</button></div>
     <form class="search" id="searchForm"><input id="searchInput" placeholder="都市名で検索（例: 京都、Paris）" autocomplete="off"><button type="submit">検索</button></form>
     <div id="searchOut"></div>
     <div class="sec"><span class="label">日本</span><div class="chips" id="chipsJP"></div></div>
@@ -216,6 +283,25 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   </section>
 
   <div id="pageMsg" class="a-msg"></div>
+
+  <section class="run a-run" id="run" aria-label="ランニングの走りやすさ">
+    <div class="run-now">
+      <span class="label">いまの走りやすさ</span>
+      <span class="run-score num" id="runScore">--<small>/100</small></span>
+      <span class="run-lab" id="runLab" style="background:var(--muted)">計算中</span>
+    </div>
+    <div class="run-side">
+      <div class="run-why" id="runWhy"></div>
+      <div class="sub" id="runNote"></div>
+    </div>
+    <div class="run-plan">
+      <div class="row"><span class="label">これから24時間（1時間ごと）</span><span class="sub"><span class="s4" style="display:inline-block;width:9px;height:9px;border-radius:2px"></span> 最適　<span class="s3" style="display:inline-block;width:9px;height:9px;border-radius:2px"></span> 良好　<span class="s2" style="display:inline-block;width:9px;height:9px;border-radius:2px"></span> まずまず　<span class="s1" style="display:inline-block;width:9px;height:9px;border-radius:2px"></span> 不向き</span></div>
+      <div class="run-strip" id="runStrip" role="img" aria-label="24時間の走りやすさ"></div>
+      <div class="run-axis" id="runAxis"></div>
+      <div class="run-best" id="runBest"></div>
+    </div>
+    <div class="run-tips" id="runTips"></div>
+  </section>
 
   <section class="hero a-hero">
     <div class="now">
@@ -229,6 +315,11 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
       <div class="row"><span class="label">気圧</span><span class="sub" id="baroTime"></span></div>
       <div class="baro-head"><span class="baro-val num" id="baroVal">----<small>hPa</small></span><span id="baroChips"></span></div>
       <div class="sub" id="baroNote"></div>
+      <div class="ctabs" role="tablist" aria-label="グラフの切り替え">
+        <button type="button" role="tab" data-mode="press" aria-selected="true">気圧</button>
+        <button type="button" role="tab" data-mode="temp" aria-selected="false">気温・露点</button>
+        <button type="button" role="tab" data-mode="rain" aria-selected="false">降水</button>
+      </div>
       <div class="pchart" id="pchart"></div>
       <div class="legend" id="plegend"></div>
     </div>
@@ -265,6 +356,13 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
     <div>気圧の影響度は、その日の6時間以内の気圧低下量から出した目安です（6hPa以上で大、3hPa以上で中）。</div>
   </footer>
 </div>
+
+<nav class="tabbar" id="tabbar" aria-label="画面の切り替え">
+  <button type="button" data-tab="now" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>いま</span></button>
+  <button type="button" data-tab="radar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 15a4 4 0 0 1-.4-8 6 6 0 0 1 11.3 1.5A3.6 3.6 0 0 1 17.5 15z"/><path d="M8 18.5l-1 2.5M12.5 18.5l-1 2.5M17 18.5l-1 2.5"/></svg><span>雨雲</span></button>
+  <button type="button" data-tab="week"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17h2M11 17h2"/></svg><span>週間</span></button>
+  <button type="button" data-tab="city"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span>場所</span></button>
+</nav>
 
 <script>
 "use strict";
@@ -306,21 +404,35 @@ const med=a=>{a=a.filter(v=>v!=null&&!isNaN(v)).sort((x,y)=>x-y);if(!a.length)re
 const R=v=>v==null?"—":Math.round(v);
 
 /* ---------- data ---------- */
-async function getJSON(url){const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}
+async function getJSON(url,{timeout=15000}={}){
+  const ac=new AbortController(); const tm=setTimeout(()=>ac.abort(),timeout);
+  try{const r=await fetch(url,{signal:ac.signal,cache:"no-store"});if(!r.ok){const e=new Error("HTTP "+r.status);e.status=r.status;throw e;}return await r.json();}
+  catch(e){if(e.name==="AbortError"){const t=new Error("タイムアウト");t.net=true;throw t;} if(e instanceof TypeError)e.net=true; throw e;}
+  finally{clearTimeout(tm)}
+}
+// 通信エラー（スリープ復帰直後など）は間隔をあけて最大3回まで再試行
+async function getJSONRetry(url,tries=3){
+  let last;
+  for(let k=0;k<tries;k++){
+    if(k) await new Promise(r=>setTimeout(r,k===1?1500:4000));
+    try{return await getJSON(url)}catch(e){last=e; if(!e.net&&!(e.status>=500||e.status===429)) break;}
+  }
+  throw last;
+}
 function fetchMain(lat,lon){
   const u=new URL("https://api.open-meteo.com/v1/forecast");
   Object.entries({latitude:lat,longitude:lon,timezone:"auto",forecast_days:8,wind_speed_unit:"ms",
-    current:"temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m,precipitation,is_day",
-    hourly:"temperature_2m,precipitation_probability,precipitation,weather_code,pressure_msl,is_day,wind_speed_10m,wind_direction_10m",
+    current:"temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m,precipitation,is_day",
+    hourly:"temperature_2m,dew_point_2m,precipitation_probability,precipitation,weather_code,pressure_msl,is_day,wind_speed_10m,wind_direction_10m",
     minutely_15:"precipitation",forecast_minutely_15:8,
     daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant"
   }).forEach(([k,v])=>u.searchParams.set(k,v));
-  return getJSON(u);
+  return getJSONRetry(u);
 }
 function fetchModels(lat,lon){
   const u=new URL("https://api.open-meteo.com/v1/forecast");
   Object.entries({latitude:lat,longitude:lon,timezone:"auto",forecast_days:8,models:MODELS.map(m=>m[0]).join(","),
-    hourly:"pressure_msl",daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum"
+    hourly:"pressure_msl,temperature_2m,precipitation",daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum"
   }).forEach(([k,v])=>u.searchParams.set(k,v));
   return getJSON(u);
 }
@@ -357,7 +469,7 @@ function render(main,mods,place){
   const [phrase]=wmo(c.weather_code);
   $("nowTemp").innerHTML=`${R(c.temperature_2m)}<small>°</small>`;
   $("nowPhrase").innerHTML=`${icon(c.weather_code,26,!c.is_day)}${esc(phrase)}`;
-  $("nowMeta").innerHTML=[`体感 ${R(c.apparent_temperature)}°`,`湿度 ${R(c.relative_humidity_2m)}%`,`風 ${dirJ(c.wind_direction_10m)} ${c.wind_speed_10m!=null?c.wind_speed_10m.toFixed(1):"—"}m/s`,c.precipitation?`降水 ${c.precipitation}mm`:""].filter(Boolean).map(s=>`<span>${s}</span>`).join("");
+  $("nowMeta").innerHTML=[`体感 ${R(c.apparent_temperature)}°`,`湿度 ${R(c.relative_humidity_2m)}%`,`露点 ${R(c.dew_point_2m)}°`,`風 ${dirJ(c.wind_direction_10m)} ${c.wind_speed_10m!=null?c.wind_speed_10m.toFixed(1):"—"}m/s`,c.precipitation?`降水 ${c.precipitation}mm`:""].filter(Boolean).map(s=>`<span>${s}</span>`).join("");
 
   // now index in hourly
   const nowKey=c.time.slice(0,13);
@@ -375,7 +487,7 @@ function render(main,mods,place){
   const mn=Math.min(...next24),mx=Math.max(...next24),mnI=ni+p.slice(ni,ni+25).indexOf(mn);
   $("baroNote").textContent=`3時間後 ${p3!=null?Math.round(p3):"—"}hPa（${tr>=0?"+":""}${tr.toFixed(1)}）・24時間の幅 ${Math.round(mn)}〜${Math.round(mx)}hPa、最低は${h.time[mnI].slice(11,13)}時ごろ`
     +(pm3!=null?` ・ 3時間前比 ${(c.pressure_msl-pm3>=0?"+":"")}${(c.pressure_msl-pm3).toFixed(1)}`:"");
-  drawPressure(h.time,p,mods,ni);
+  CH={times:h.time,h,mods,ni}; drawChart();
 
   // hours
   $("hours").innerHTML=h.time.slice(ni,ni+12).map((t,k)=>{const i=ni+k;return `<div class="hr"><span class="t">${k===0?"今":t.slice(11,13)+"時"}</span>${icon(h.weather_code[i],22,!h.is_day[i])}<span class="tp num">${R(h.temperature_2m[i])}°</span><span class="p num">${h.precipitation_probability[i]??"—"}%</span><span class="hp num">${R(p[i])}</span></div>`}).join("");
@@ -420,7 +532,7 @@ function render(main,mods,place){
 function dayHours(h,ymd,from){
   const idx=[];h.time.forEach((t,i)=>{if(t.slice(0,10)===ymd&&i>=from)idx.push(i)});
   if(!idx.length)return"";
-  return `<div class="label" style="margin:2px 0 4px">時間ごと</div><div class="dh">`+idx.map(i=>`<div class="hr"><span class="t">${h.time[i].slice(11,13)}時</span>${icon(h.weather_code[i],22,!h.is_day[i])}<span class="tp num">${R(h.temperature_2m[i])}°</span><span class="p num">☂${h.precipitation_probability[i]??"—"}%</span><span class="w num">${h.precipitation&&h.precipitation[i]?h.precipitation[i].toFixed(1)+"mm":"&nbsp;"}</span><span class="w">${h.wind_direction_10m?dirJ(h.wind_direction_10m[i])+" "+R(h.wind_speed_10m[i]):""}</span><span class="hp num">${R(h.pressure_msl[i])}</span></div>`).join("")+`</div>`;
+  return `<div class="label" style="margin:2px 0 4px">時間ごと</div><div class="dh">`+idx.map(i=>`<div class="hr"><span class="t">${h.time[i].slice(11,13)}時</span>${icon(h.weather_code[i],22,!h.is_day[i])}<span class="tp num">${R(h.temperature_2m[i])}°</span><span class="w num">露 ${h.dew_point_2m?R(h.dew_point_2m[i])+"°":"—"}</span><span class="p num">☂${h.precipitation_probability[i]??"—"}%</span><span class="w num">${h.precipitation&&h.precipitation[i]?h.precipitation[i].toFixed(1)+"mm":"&nbsp;"}</span><span class="w">${h.wind_direction_10m?dirJ(h.wind_direction_10m[i])+" "+R(h.wind_speed_10m[i]):""}</span><span class="hp num">${R(h.pressure_msl[i])}</span></div>`).join("")+`</div>`;
 }
 function rainNote(main){
   const m=main.minutely_15; let txt="";
@@ -509,26 +621,58 @@ async function loadRadar(lat,lon){
   setTimeout(()=>RADAR.map.invalidateSize(),50);
 }
 
-function drawPressure(times,p,mods,ni){
-  const W=680,H=190,L=40,Rr=10,T=12,B=26;
-  const series=[{name:"標準",color:"var(--ink)",w:2.4,data:p}];
-  MODELS.forEach(([m,label,col])=>{const a=mods.hourly[`pressure_msl_${m}`];if(a&&a.some(v=>v!=null))series.push({name:label,color:`var(${col})`,w:1.2,data:a,dash:"4 3"})});
-  const all=series.flatMap(s=>s.data).filter(v=>v!=null);
-  let lo=Math.floor(Math.min(...all)/2)*2-1,hi=Math.ceil(Math.max(...all)/2)*2+1;
-  const n=times.length,X=i=>L+(W-L-Rr)*i/(n-1),Y=v=>T+(H-T-B)*(hi-v)/(hi-lo);
+let CH=null;
+let CMODE=store.get("wx.chart","press");
+function drawChart(mode){
+  if(mode){CMODE=mode;store.set("wx.chart",mode);}
+  document.querySelectorAll(".ctabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.mode===CMODE)));
+  if(!CH)return;
+  const {times,h,mods,ni}=CH, n=times.length;
+  const W=680,H=200,L=40,Rr=CMODE==="rain"?36:10,T=12,B=26;
+  const X=i=>L+(W-L-Rr)*i/(n-1);
+  const modelSeries=key=>MODELS.map(([m,label,col])=>{const a=mods.hourly[`${key}_${m}`];return a&&a.some(v=>v!=null)?{name:label,color:`var(${col})`,w:1.2,data:a,dash:"4 3"}:null}).filter(Boolean);
+  let series=[],title="",unit="",bars=null,ref=null,yfmt=v=>v,minSpan=6;
+  if(CMODE==="temp"){
+    series=[{name:"気温（最適ブレンド）",color:"var(--ink)",w:2.4,data:h.temperature_2m},{name:"露点",color:"var(--rain)",w:2.2,data:h.dew_point_2m||[]},...modelSeries("temperature_2m")];
+    title="8日間の気温と露点（℃）";unit="℃";minSpan=8;
+  }else if(CMODE==="rain"){
+    bars=h.precipitation||[];
+    series=[{name:"降水確率（右目盛）",color:"var(--muted)",w:1.6,data:h.precipitation_probability||[],axis2:true}];
+    title="8日間の1時間降水量（mm）と降水確率";unit="mm";
+  }else{
+    series=[{name:"最適ブレンド",color:"var(--ink)",w:2.4,data:h.pressure_msl},...modelSeries("pressure_msl")];
+    title="8日間の気圧予報（hPa）";unit="hPa";ref=1013;
+  }
+  // 縦軸
+  let lo,hi;
+  if(CMODE==="rain"){const mx=Math.max(1,...bars.filter(v=>v!=null));hi=mx<=2?2:mx<=5?5:mx<=10?10:Math.ceil(mx/10)*10;lo=0;}
+  else{const all=series.filter(s=>!s.axis2).flatMap(s=>s.data).filter(v=>v!=null);lo=Math.floor(Math.min(...all))-1;hi=Math.ceil(Math.max(...all))+1;
+    if(hi-lo<minSpan){const m=(hi+lo)/2;lo=Math.floor(m-minSpan/2);hi=Math.ceil(m+minSpan/2);}}
+  const Y=v=>T+(H-T-B)*(hi-v)/(hi-lo), Y2=v=>T+(H-T-B)*(100-v)/100;
+  const span=hi-lo, step=CMODE==="rain"?(hi<=2?0.5:hi<=5?1:hi<=10?2:hi/5):span>24?8:span>16?6:span>8?4:2;
   let g="";
-  const step=(hi-lo)>16?6:(hi-lo)>8?4:2;
-  for(let v=Math.ceil(lo/step)*step;v<=hi;v+=step)g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-5}" y="${Y(v)+3}" text-anchor="end">${v}</text>`;
-  if(lo<1013&&hi>1013)g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(1013)}" y2="${Y(1013)}" stroke="var(--muted)" stroke-dasharray="2 4"/>`;
+  for(let v=Math.ceil(lo/step)*step;v<=hi+1e-9;v+=step){const vv=+v.toFixed(2);g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(vv)}" y2="${Y(vv)}" stroke="var(--line)"/><text x="${L-5}" y="${Y(vv)+3}" text-anchor="end">${vv}</text>`;}
+  if(CMODE==="rain")[0,50,100].forEach(v=>g+=`<text x="${W-Rr+5}" y="${Y2(v)+3}">${v}%</text>`);
+  if(ref!=null&&lo<ref&&hi>ref)g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--muted)" stroke-dasharray="2 4"/>`;
+  if(CMODE==="temp"&&lo<0&&hi>0)g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--cold)" stroke-dasharray="2 4"/>`;
   times.forEach((t,i)=>{if(t.slice(11,13)==="00"){g+=`<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${H-B}" stroke="var(--line)"/>`;
     if(i<n-12)g+=`<text x="${X(i)+3}" y="${H-10}">${+t.slice(5,7)}/${+t.slice(8,10)}</text>`}});
   g+=`<rect x="${L}" y="${T}" width="${Math.max(0,X(ni)-L)}" height="${H-T-B}" fill="var(--bg)" opacity=".6"/>`;
-  series.slice().reverse().forEach(s=>{let d="",pen=false;s.data.forEach((v,i)=>{if(v==null){pen=false;return}d+=(pen?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1);pen=true});
-    g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w}" ${s.dash?`stroke-dasharray="${s.dash}"`:""} stroke-linejoin="round"/>`});
-  g+=`<line x1="${X(ni)}" x2="${X(ni)}" y1="${T}" y2="${H-B}" stroke="var(--hot)" stroke-width="1.5"/><circle cx="${X(ni)}" cy="${Y(p[ni])}" r="4" fill="var(--hot)"/><text x="${X(ni)+5}" y="${T+10}" style="fill:var(--hot)">今</text>`;
-  $("pchart").innerHTML=`<div class="label" style="margin-bottom:4px">8日間の気圧予報（hPa）</div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="8日間の気圧予報">${g}</svg>`;
-  $("plegend").innerHTML=series.map(s=>`<span><i style="background:${s.color}"></i>${s.name==="標準"?"最適ブレンド":s.name}</span>`).join("");
+  if(bars){const bw=Math.max(1,(W-L-Rr)/n-0.4);bars.forEach((v,i)=>{if(!v)return;g+=`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${Y(Math.min(v,hi)).toFixed(1)}" width="${bw.toFixed(2)}" height="${(H-B-Y(Math.min(v,hi))).toFixed(1)}" fill="var(--rain)"/>`;});}
+  series.slice().reverse().forEach(s=>{const YY=s.axis2?Y2:Y;let d="",pen=false;s.data.forEach((v,i)=>{if(v==null){pen=false;return}d+=(pen?"L":"M")+X(i).toFixed(1)+" "+YY(v).toFixed(1);pen=true});
+    if(d)g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w}" ${s.dash?`stroke-dasharray="${s.dash}"`:""} stroke-linejoin="round"/>`});
+  const main=series[0], nowV=CMODE==="rain"?null:main.data[ni];
+  g+=`<line x1="${X(ni)}" x2="${X(ni)}" y1="${T}" y2="${H-B}" stroke="var(--hot)" stroke-width="1.5"/>`+(nowV!=null?`<circle cx="${X(ni)}" cy="${Y(nowV)}" r="4" fill="var(--hot)"/>`:"")+`<text x="${X(ni)+5}" y="${T+10}" style="fill:var(--hot)">今</text>`;
+  // 要約
+  let sum="";
+  if(CMODE==="temp"){const d=h.dew_point_2m||[];const gap=Math.max(0,(h.temperature_2m[ni]??0)-(d[ni]??0));
+    sum=`いまの露点 ${R(d[ni])}℃（気温との差 ${gap.toFixed(1)}℃）`+(gap<=2?" ・ 霧や結露が出やすい状態です":(d[ni]>=20?" ・ 蒸し暑く感じやすい状態です":""));}
+  else if(CMODE==="rain"){const next=bars.slice(ni,ni+24).reduce((a,v)=>a+(v||0),0);const tot=bars.slice(ni).reduce((a,v)=>a+(v||0),0);
+    sum=`この先24時間 ${next.toFixed(1)}mm ・ 8日間合計 ${tot.toFixed(1)}mm`;}
+  $("pchart").innerHTML=`<div class="label" style="margin:6px 0 4px">${title}</div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title}">${g}</svg>`+(sum?`<div class="sub" style="margin-top:4px">${sum}</div>`:"");
+  $("plegend").innerHTML=(bars?`<span><i style="background:var(--rain);height:8px"></i>1時間降水量</span>`:"")+series.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join("");
 }
+document.querySelectorAll(".ctabs button").forEach(b=>b.onclick=()=>drawChart(b.dataset.mode));
 
 /* ---------- flow ---------- */
 function cur(){return view||home||DEFAULT_HOME}
@@ -544,19 +688,112 @@ function skeleton(){
   $("baroVal").innerHTML='----<small>hPa</small>';$("baroChips").innerHTML="";$("baroNote").textContent="";$("pchart").innerHTML="";$("plegend").innerHTML="";
   $("hours").innerHTML='<div class="skel">読み込み中…</div>';$("twoDays").innerHTML='<div class="card skel">読み込み中…</div><div class="card skel">読み込み中…</div>';$("week").innerHTML='<div class="skel">読み込み中…</div>';
 }
+function cacheKey(p){return "wx.c."+p.lat.toFixed(2)+","+p.lon.toFixed(2)}
+function saveCache(place,main,mods){
+  try{const idx=store.get("wx.cidx",[]).filter(k=>k!==cacheKey(place));idx.unshift(cacheKey(place));
+    idx.slice(3).forEach(k=>{try{localStorage.removeItem(k)}catch(_){}});
+    store.set("wx.cidx",idx.slice(0,3)); localStorage.setItem(cacheKey(place),JSON.stringify({at:Date.now(),main,mods}));}catch(_){}
+}
+function loadCache(place){return store.get(cacheKey(place),null)}
+
+/* ---------- ランニングの走りやすさ ---------- */
+// 気温・露点・風・雨から0〜100点。目安: 気温8〜15℃、露点10℃以下、風5m/s以下、雨なしが満点
+function runScore(t,dp,w,pr,pop){
+  let sc=100; const why=[];
+  if(t>15){sc-=(t-15)*3.2;} else if(t<5){sc-=(5-t)*2.5;}
+  if(dp!=null&&dp>10){sc-=(dp-10)*3;}
+  if(w!=null&&w>5){sc-=(w-5)*4;}
+  if(pr!=null&&pr>=2){sc-=45;} else if(pr!=null&&pr>=0.2){sc-=25;}
+  else if(pop!=null&&pop>=60){sc-=10;}
+  return Math.max(0,Math.min(100,Math.round(sc)));
+}
+const runLevel=sc=>sc>=80?["最適","s4","var(--r4)"]:sc>=60?["良好","s3","var(--r3)"]:sc>=40?["まずまず","s2","var(--r2)"]:["不向き","s1","var(--r1)"];
+// 気温＋露点（°F換算の合計）によるペース調整の目安
+function paceAdj(t,dp){
+  if(t==null||dp==null)return null;
+  const sum=(t*9/5+32)+(dp*9/5+32);
+  const tbl=[[100,"調整不要"],[110,"0〜0.5%遅く"],[120,"0.5〜1%遅く"],[130,"1〜2%遅く"],[140,"2〜3%遅く"],[150,"3〜4.5%遅く"],[160,"4.5〜6%遅く"],[170,"6〜8%遅く"],[180,"8〜10%遅く"]];
+  for(const [lim,txt] of tbl) if(sum<=lim) return {txt,sum:Math.round(sum)};
+  return {txt:"強度の高い練習は避ける",sum:Math.round(sum)};
+}
+function wear(feel){
+  const x=feel+10; // 走ると体感は約10℃上がる
+  if(x>=24)return "ノースリーブ・短パン";
+  if(x>=18)return "半袖・短パン";
+  if(x>=13)return "半袖＋アームカバー または 薄手長袖";
+  if(x>=8)return "長袖・タイツ";
+  if(x>=3)return "長袖＋ウインドブレーカー・手袋";
+  return "防寒ウェア・手袋・ネックウォーマー";
+}
+function renderRun(main){
+  const c=main.current,h=main.hourly;
+  const nowKey=c.time.slice(0,13); let ni=h.time.findIndex(t=>t.slice(0,13)===nowKey); if(ni<0)ni=0;
+  const g=(k,i)=>h[k]?h[k][i]:null;
+  const sc=runScore(c.temperature_2m,c.dew_point_2m,c.wind_speed_10m,c.precipitation,g("precipitation_probability",ni));
+  const [lab,,col]=runLevel(sc);
+  $("runScore").innerHTML=`${sc}<small>/100</small>`;
+  $("runLab").textContent=lab; $("runLab").style.background=col;
+  const chip=(cls,txt)=>`<span class="why ${cls}">${txt}</span>`;
+  const t=c.temperature_2m,dp=c.dew_point_2m,w=c.wind_speed_10m;
+  let why="";
+  why+=chip(t>22||t<0?"bad":t>15||t<5?"warn":"ok",`気温 <b>${R(t)}°</b>`);
+  why+=chip(dp>18?"bad":dp>12?"warn":"ok",`露点 <b>${R(dp)}°</b>`);
+  why+=chip(w>9?"bad":w>5?"warn":"ok",`風 ${dirJ(c.wind_direction_10m)} <b>${w!=null?w.toFixed(1):"—"}</b>m/s`);
+  why+=chip(c.precipitation>=0.2?"bad":(g("precipitation_probability",ni)>=50?"warn":"ok"),c.precipitation>=0.2?`雨 <b>${c.precipitation}</b>mm`:`降水確率 <b>${g("precipitation_probability",ni)??"—"}</b>%`);
+  $("runWhy").innerHTML=why;
+  const notes=[];
+  if(dp>18)notes.push("露点が高く汗が乾きにくい状態です。こまめな給水を。");
+  else if(dp>12)notes.push("やや蒸します。いつもより給水を多めに。");
+  if(t<5)notes.push("冷えます。ウォームアップを長めに。");
+  if(w>7)notes.push("風が強めです。往路を向かい風にすると帰りが楽です。");
+  if(c.precipitation>=0.2)notes.push("雨が降っています。路面の滑りに注意。");
+  $("runNote").textContent=notes.join(" ")||"走るのにちょうど良いコンディションです。";
+  // 24時間ストリップ
+  const idx=[];for(let i=ni;i<Math.min(h.time.length,ni+24);i++)idx.push(i);
+  const scores=idx.map(i=>runScore(g("temperature_2m",i),g("dew_point_2m",i),g("wind_speed_10m",i),g("precipitation",i),g("precipitation_probability",i)));
+  // 2時間の平均が最も高い枠を2つ（重ならないように）
+  const win=[];for(let k=0;k<scores.length-1;k++)win.push([k,(scores[k]+scores[k+1])/2]);
+  win.sort((a,b)=>b[1]-a[1]); const best=[];
+  for(const [k,v] of win){if(best.every(([b])=>Math.abs(b-k)>=3))best.push([k,v]); if(best.length===2)break;}
+  const bestSet=new Set(best.flatMap(([k])=>[k,k+1]));
+  $("runStrip").innerHTML=scores.map((v,k)=>{const [l,cls]=runLevel(v);const i=idx[k];return `<span class="${cls}${bestSet.has(k)?" best":""}" title="${h.time[i].slice(11,13)}時 ${v}点（${l}）"></span>`}).join("");
+  $("runAxis").innerHTML=idx.map((i,k)=>`<span>${k%3===0?(k===0?"今":+h.time[i].slice(11,13)):""}</span>`).join("");
+  const fmtW=([k,v])=>{const a=h.time[idx[k]],b=h.time[idx[k+1]];const day=a.slice(0,10)===c.time.slice(0,10)?"今日":"明日";return `${day} <b>${+a.slice(11,13)}〜${+b.slice(11,13)+1}時</b>（${Math.round(v)}点）`};
+  $("runBest").innerHTML=best.length?`おすすめの時間帯：${best.map(fmtW).join("　")}`:"";
+  // ヒント
+  const pa=paceAdj(t,dp);
+  const feel=c.apparent_temperature??t;
+  $("runTips").innerHTML=
+    `<div class="tip"><span class="label">ペース目安</span><span class="v">${pa?esc(pa.txt):"—"}</span><span class="sub">気温＋露点 ${pa?pa.sum:"—"}°F</span></div>`+
+    `<div class="tip"><span class="label">服装</span><span class="v">${esc(wear(feel))}</span><span class="sub">体感${R(feel)}℃＋10℃で判断</span></div>`+
+    `<div class="tip"><span class="label">給水</span><span class="v">${dp>18?"15分ごと":dp>12?"20分ごと":t>20?"20分ごと":"30分ごと"}</span><span class="sub">60分超のランで</span></div>`;
+}
+
 async function loadWeather(){
   const s=++seq,place=cur();header();
   $("refreshBtn").innerHTML='<span class="spin">↻</span> 更新';
   try{
+    if(navigator.onLine===false) throw Object.assign(new Error("オフライン"),{net:true});
     const [main,mods]=await Promise.all([fetchMain(place.lat,place.lon),fetchModels(place.lat,place.lon).catch(()=>({daily:{},hourly:{time:[]}}))]);
     if(s!==seq)return;
-    render(main,mods,place);
+    $("pageMsg").innerHTML="";
+    render(main,mods,place); renderRun(main);
+    saveCache(place,main,mods);
     loadRadar(place.lat,place.lon);
     $("updated").textContent=`取得 ${new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}（日本時間）・ 地点 ${place.lat.toFixed(2)}, ${place.lon.toFixed(2)}`;
   }catch(e){
     if(s!==seq)return;
-    $("pageMsg").innerHTML=`<div class="msg">予報を取得できませんでした（${esc(e.message||e)}）。通信状態を確認して「更新」を押してください。</div>`;
-    $("nowPhrase").textContent="取得できません";
+    const c=loadCache(place);
+    const why=e.net?"通信がつながりませんでした":"予報サービスがエラーを返しました";
+    if(c){
+      try{render(c.main,c.mods,place);renderRun(c.main);loadRadar(place.lat,place.lon);}catch(_){}
+      $("pageMsg").innerHTML=`<div class="msg">${why}（${esc(e.message||e)}）。${esc(new Date(c.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}))} に取得したデータを表示しています。<button class="retry" id="retryBtn">再読み込み</button></div>`;
+    }else{
+      $("pageMsg").innerHTML=`<div class="msg">${why}（${esc(e.message||e)}）。電波の良い場所で「再読み込み」を押してください。<button class="retry" id="retryBtn">再読み込み</button></div>`;
+      $("nowPhrase").textContent="取得できません";
+    }
+    const rb=$("retryBtn"); if(rb) rb.onclick=()=>{$("pageMsg").innerHTML="";loadWeather()};
+    if(e.net) window.addEventListener("online",()=>loadWeather(),{once:true});
   }finally{if(s===seq)$("refreshBtn").textContent="↻ 更新";}
 }
 async function locate(){
@@ -571,7 +808,7 @@ async function locate(){
   }
 }
 async function goHome(refreshGPS){view=null;skeleton();header();if(refreshGPS){$("placeName").textContent="位置を取得中…";await locate();}await loadWeather();}
-function goCity(c){view=c;skeleton();toggleSheet(false);window.scrollTo({top:0});$("pageMsg").innerHTML="";loadWeather();}
+function goCity(c){view=c;skeleton();toggleSheet(false);if(!isDesk())setTab("now");window.scrollTo({top:0});$("pageMsg").innerHTML="";loadWeather();}
 
 function toggleSheet(o){$("sheet").hidden=!o;$("switchBtn").setAttribute("aria-expanded",String(o));}
 $("switchBtn").onclick=e=>{e.stopPropagation();toggleSheet($("sheet").hidden)};
@@ -594,7 +831,36 @@ $("searchForm").addEventListener("submit",async ev=>{
 });
 // 画面に戻ってきたとき、30分以上経っていれば更新
 let lastLoad=Date.now();
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-lastLoad>30*60000){lastLoad=Date.now();view?loadWeather():goHome(true)}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-lastLoad>30*60000){lastLoad=Date.now();setTimeout(()=>view?loadWeather():goHome(true),1200)}});
+
+/* ---------- 下部タブ ---------- */
+const TABS=["now","radar","week","city"];
+const isDesk=()=>matchMedia("(min-width:1024px)").matches;
+const TAB_TARGET={now:".a-run",radar:".a-radar",week:".a-week"};
+function setTab(t,{scroll=true}={}){
+  if(!TABS.includes(t))t="now";
+  document.querySelectorAll("#tabbar button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===t?"page":"false"));
+  if(isDesk()){
+    if(t==="city"){toggleSheet(true);window.scrollTo({top:0,behavior:"smooth"});$("searchInput").focus({preventScroll:true});}
+    else{toggleSheet(false);const el=document.querySelector(TAB_TARGET[t]);if(el&&scroll)el.scrollIntoView({behavior:"smooth",block:"start"});}
+    return;
+  }
+  document.body.dataset.tab=t;
+  if(scroll)window.scrollTo({top:0});
+  if(t==="radar"&&RADAR.map)setTimeout(()=>RADAR.map.invalidateSize(),60);
+  if(t==="city")setTimeout(()=>$("searchInput").focus({preventScroll:true}),50);
+  try{history.replaceState(null,"",t==="now"?location.pathname+location.search:"#"+t)}catch(_){}
+}
+document.querySelectorAll("#tabbar button").forEach(b=>b.onclick=e=>{e.stopPropagation();setTab(b.dataset.tab)});
+$("sheetHome").onclick=()=>{setTab("now");goHome(true)};
+// PC：見えている欄に合わせてタブの色を変える
+if("IntersectionObserver" in window){
+  const io=new IntersectionObserver(es=>{if(!isDesk())return;es.forEach(e=>{if(e.isIntersecting){const t=Object.keys(TAB_TARGET).find(k=>e.target.matches(TAB_TARGET[k]));if(t)document.querySelectorAll("#tabbar button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===t?"page":"false"));}})},{rootMargin:"-40% 0px -50% 0px"});
+  Object.values(TAB_TARGET).forEach(sel=>{const el=document.querySelector(sel);if(el)io.observe(el)});
+}
+matchMedia("(min-width:1024px)").addEventListener?.("change",()=>{ if(!isDesk()) setTab(document.body.dataset.tab||"now",{scroll:false}); setTimeout(()=>RADAR.map&&RADAR.map.invalidateSize(),80); });
+document.body.dataset.tab="now";
+setTab((location.hash||"").slice(1)||"now",{scroll:false});
 
 header();
 goHome(true);
