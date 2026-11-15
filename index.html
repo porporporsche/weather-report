@@ -116,6 +116,9 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .rtime{font-family:var(--f-num);font-size:11.5px;white-space:nowrap}
 .rtime.fc{color:var(--hot)}
 .rnote{padding:0 8px 8px;font-size:11.5px;color:var(--muted)}
+.rlegend{display:flex;flex-wrap:wrap;gap:2px 8px;padding:6px 8px 4px;font-size:10.5px;color:var(--muted);font-family:var(--f-num)}
+.rlegend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.rlegend .u{margin-left:auto}
 .rnote b{color:var(--rain)}
 .leaflet-container{font-family:var(--f-body)}
 .basemap{filter:grayscale(.85) contrast(.9) brightness(1.04)}
@@ -335,6 +338,9 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
       <div class="card radar">
         <div id="rmap" role="region" aria-label="雨雲レーダー地図"></div>
         <div class="rbar"><button id="rplay" aria-label="再生・一時停止">▶</button><input type="range" id="rslider" min="0" max="0" value="0" aria-label="時刻"><span class="rtime" id="rtime">--:--</span></div>
+        <div class="rlegend" id="rlegend" hidden aria-label="降水の強さ（mm/時）">
+          <span><i style="background:#F2F2FF"></i>〜1</span><span><i style="background:#A0D2FF"></i>1〜5</span><span><i style="background:#218CFF"></i>5〜10</span><span><i style="background:#0041FF"></i>10〜20</span><span><i style="background:#FAF500"></i>20〜30</span><span><i style="background:#FF9900"></i>30〜50</span><span><i style="background:#FF2800"></i>50〜80</span><span><i style="background:#B40068"></i>80〜</span><span class="u">mm/時</span>
+        </div>
         <div class="rnote" id="rnote">読み込み中…</div>
       </div>
     </section>
@@ -593,7 +599,7 @@ function playAnim(){stopAnim();RADAR.timer=setInterval(()=>showFrame(RADAR.idx+1
 async function loadRadar(lat,lon){
   if(!window.L){$("rnote").textContent="地図を読み込めませんでした。通信状態を確認して更新してください。";return;}
     if(!RADAR.map){
-    RADAR.map=L.map("rmap",{zoomControl:false,attributionControl:false,minZoom:4,maxZoom:11});
+    RADAR.map=L.map("rmap",{zoomControl:false,attributionControl:false,minZoom:4,maxZoom:10,zoomSnap:2,zoomDelta:2,wheelPxPerZoomLevel:120});
     L.control.attribution({prefix:false}).addTo(RADAR.map);
     L.control.zoom({position:"topright"}).addTo(RADAR.map);
     $("rplay").onclick=()=>RADAR.timer?stopAnim():playAnim();
@@ -604,7 +610,7 @@ async function loadRadar(lat,lon){
     // 背景地図: OpenStreetMap（APIキー不要）。色味はCSSでテーマに合わせる
     RADAR.base=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,className:"basemap",attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(RADAR.map);
   }
-  RADAR.map.setView([lat,lon],$("rmap").clientWidth<260?7:8);
+  RADAR.map.setView([lat,lon],8);
   if(RADAR.dot)RADAR.dot.remove();
   RADAR.dot=L.circleMarker([lat,lon],{radius:6,color:"#fff",weight:2,fillColor:"#C2410C",fillOpacity:1}).addTo(RADAR.map);
   stopAnim(); RADAR.layers.forEach(l=>l.remove()); RADAR.layers=[]; RADAR.frames=[];
@@ -612,8 +618,9 @@ async function loadRadar(lat,lon){
   try{
     const F=await radarFrames(lat,lon);
     RADAR.frames=F;
-    RADAR.layers=F.map(f=>L.tileLayer(f.url,{opacity:0,maxNativeZoom:f.maxNative,maxZoom:11,zIndex:5,attribution:RADAR.src.replace("出典: ","")}).addTo(RADAR.map));
+    RADAR.layers=F.map(f=>L.tileLayer(f.url,{opacity:0,maxNativeZoom:f.maxNative,maxZoom:10,zIndex:5,className:"radarlayer",attribution:RADAR.src.replace("出典: ","")}).addTo(RADAR.map));
     $("rslider").max=Math.max(0,F.length-1);
+    $("rlegend").hidden=!RADAR.src.includes("気象庁");
     const lastPast=F.map(f=>f.fc).lastIndexOf(false);
     showFrame(lastPast>=0?lastPast:0);
     $("rnote").innerHTML=(RAINTXT?RAINTXT+" ":"")+`<span>${RADAR.src}</span>`;
