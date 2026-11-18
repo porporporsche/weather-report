@@ -8,10 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>天気と気圧</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%233346A8'/%3E%3Cpath d='M9 19a10 10 0 0 1 14 0' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M16 19l4-6' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Zen+Old+Mincho:wght@400;700&family=Cormorant+Garamond:wght@500;600&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout: phone-first single column. GPS location is the hero, pressure forecast directly under it, cities behind one switcher */
 :root{
@@ -186,10 +186,11 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   body{font-size:15.5px}
   .wrap{max-width:1280px;position:relative;column-gap:24px;row-gap:0;
     grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
-    grid-template-areas:"bar bar" "away away" "msg msg" "run run" "hero radar" "hours hours" "week days" "foot foot";
+    grid-template-areas:"bar bar" "away away" "msg msg" "run run" "hero radar" "hours hours" "week days" "retro retro" "foot foot";
     padding-top:24px}
   .nowrow{display:contents}
   .a-run{grid-area:run}
+  .a-retro{grid-area:retro}
   .run{grid-template-columns:auto minmax(0,1fr) minmax(0,1.2fr);padding:18px 22px;column-gap:28px}
   .run-plan{grid-column:auto}
   .run-tips{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -220,7 +221,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   .hours .hr .t,.hours .hr .p,.hours .hr .hp{font-size:11.5px}
   .hsub{display:inline!important}
   /* 今日・明日: 右カラムに縦積みで固定表示 */
-  .a-days{align-self:start;position:sticky;top:16px}
+  .a-days{align-self:start}
   .pair{grid-template-columns:1fr}
   .day{padding:16px 18px}
   .temps{font-size:28px}
@@ -236,7 +237,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 @media (min-width:1440px){.wrap{max-width:1400px}}
 
 /* ===== 下部タブ（ごはん帳と同じ操作感） ===== */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:1500;display:grid;grid-template-columns:repeat(4,1fr);max-width:720px;margin:0 auto;
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:1500;display:grid;grid-template-columns:repeat(5,1fr);max-width:720px;margin:0 auto;
   background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
   border-top:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-right))}
 .tabbar button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;color:var(--muted);font-size:11px;font-weight:600;min-height:50px}
@@ -254,7 +255,8 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   body[data-tab="city"] .a-sheet{display:grid!important}
   body:not([data-tab="city"]) .a-sheet{display:none!important}
   .nowrow{grid-template-columns:minmax(0,1fr)}
-  body[data-tab="week"] .nowrow, body[data-tab="city"] .nowrow{display:none}
+  body[data-tab="week"] .nowrow, body[data-tab="city"] .nowrow, body[data-tab="retro"] .nowrow{display:none}
+  body:not([data-tab="retro"]) .a-retro{display:none!important}
   #rbig{display:none}
   body[data-tab="radar"] #rmap{height:max(320px,calc(100vh - 300px))}
   body[data-tab="radar"] .rbar input{display:block!important}
@@ -263,9 +265,55 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 }
 /* PC：全体を1画面に並べたまま、タブは各欄へのジャンプに使う */
 @media (min-width:1024px){
-  .tabbar{max-width:440px;left:50%;right:auto;transform:translateX(-50%);width:440px}
+  .tabbar{max-width:540px;left:50%;right:auto;transform:translateX(-50%);width:540px}
   .sheet-head{display:none}
 }
+
+/* ===== レトロ（アナログ計器）: 木の盤に真鍮の計器。テーマに関係なく同じ見た目 ===== */
+.retro{--wood1:#5a3b22;--wood2:#6e4a2c;--brass:#c39a48;--paper:#f4ead2;--ink2:#2b2118;
+  border-radius:16px;padding:16px 14px 18px;display:grid;gap:14px;color:#f4ead2;
+  background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 9px),repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 23px),linear-gradient(180deg,var(--wood2),var(--wood1));
+  box-shadow:inset 0 0 0 3px #3e2715,inset 0 0 22px rgba(0,0,0,.45);font-family:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif}
+.retro-head{display:flex;flex-direction:column;align-items:center;gap:2px}
+.retro-plate{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;letter-spacing:.32em;font-size:15px;color:#3a2610;padding:4px 18px;border-radius:4px;
+  background:linear-gradient(180deg,#f0d896,#c39a48 60%,#9a7330);box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 2px 4px rgba(0,0,0,.4)}
+.retro-sub{font-size:12px;letter-spacing:.4em;color:#e9d7ae;opacity:.85}
+.retro-grid{display:grid;gap:14px 12px;grid-template-columns:minmax(0,.62fr) minmax(0,1fr);grid-template-areas:"baro baro" "thermo hygro" "thermo wind" "card card"}
+.ri{margin:0;display:grid;justify-items:center;align-content:start;gap:6px;min-width:0}
+.ri svg{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+.ri-baro{grid-area:baro} .ri-baro svg{max-width:340px}
+.ri-thermo{grid-area:thermo} .ri-thermo svg{max-width:120px}
+.ri-hygro{grid-area:hygro} .ri-wind{grid-area:wind} .ri-hygro svg,.ri-wind svg{max-width:190px}
+.ri-card{grid-area:card;justify-items:stretch}
+.ri figcaption{text-align:center;font-size:12.5px;line-height:1.55;color:#f4ead2}
+.ri figcaption b{font-family:"Cormorant Garamond",Georgia,serif;font-size:19px;font-weight:600;color:#ffe6a6}
+.ri figcaption span{font-size:11.5px;color:#e2cfa3}
+.retro svg text{font-family:"Zen Old Mincho","Hiragino Mincho ProN",serif;fill:#2b2118}
+.retro svg .rn{font-family:"Cormorant Garamond",Georgia,serif;font-size:12px;font-weight:600}
+.retro svg .rn.sm{font-size:10px}
+.retro svg .rz{font-size:13px;font-weight:700} .retro svg .rz.sm{font-size:10.5px}
+.retro svg .rt{font-size:15px;font-weight:700;letter-spacing:.1em} .retro svg .rt.sm{font-size:12px}
+.retro svg .rs{font-family:"Cormorant Garamond",Georgia,serif;font-size:10px;letter-spacing:.12em}
+.retro svg .rs.blue{fill:#2c4f7c;font-family:"Zen Old Mincho",serif;letter-spacing:0;font-weight:700}
+.retro svg .rd{font-family:"Cormorant Garamond",Georgia,serif;font-size:17px;font-weight:600;fill:#ffe6a6;letter-spacing:.06em}
+.retro svg .rv{font-family:"Cormorant Garamond",Georgia,serif;font-size:20px;font-weight:600}
+.rneedle{transition:transform 1.6s cubic-bezier(.34,1.45,.5,1)}
+.rneedle.main polygon,.rneedle.main circle{fill:#1f1710}
+.rneedle.set polygon,.rneedle.set circle{fill:#b8893b}
+.rmerc{transition:transform 1.8s cubic-bezier(.3,1.2,.5,1)}
+@media (prefers-reduced-motion:reduce){.rneedle,.rmerc{transition:none}}
+.retro-card{background:linear-gradient(180deg,#f8f0db,#efe2c0);color:#2b2118;border-radius:4px;padding:14px 16px 12px;position:relative;
+  box-shadow:0 3px 8px rgba(0,0,0,.45);font-family:"Zen Old Mincho","Hiragino Mincho ProN",serif;
+  background-image:repeating-linear-gradient(0deg,transparent 0 23px,rgba(120,90,40,.16) 23px 24px),linear-gradient(180deg,#f8f0db,#efe2c0)}
+.retro-card::before,.retro-card::after{content:"";position:absolute;top:7px;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3dc9a,#8a6424)}
+.retro-card::before{left:8px} .retro-card::after{right:8px}
+.rc-h{text-align:center;font-weight:700;letter-spacing:.5em;font-size:15px;border-bottom:2px double #2b2118;padding-bottom:4px;margin-bottom:6px}
+.rc-d{text-align:center;font-size:12px;margin-bottom:6px}
+.rc-l{font-size:13.5px;line-height:1.85}
+.rc-l span{display:inline-block;width:3.2em;font-weight:700;color:#a8321e}
+.rc-f{text-align:right;font-size:12px;margin-top:6px}
+@media (max-width:380px){.retro-grid{grid-template-columns:minmax(0,.55fr) minmax(0,1fr)}.rc-l{font-size:12.5px}}
+@media (min-width:1024px){.retro{padding:20px 24px 24px}.retro-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,.5fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"baro thermo hygro wind" "baro thermo card card";align-items:start}.ri-baro svg{max-width:400px}.ri-thermo svg{max-width:130px}}
 </style>
 </head>
 <body>
@@ -356,6 +404,17 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
     <div class="card week" id="week"><div class="skel">読み込み中…</div></div>
   </section>
 
+  <section class="retro a-retro" aria-label="アナログ計器で見る天気">
+    <div class="retro-head"><span class="retro-plate">WEATHER STATION</span><span class="retro-sub">気象観測所</span></div>
+    <div class="retro-grid">
+      <figure class="ri ri-baro"><div id="retroBaro"></div><figcaption id="retroBaroCap"></figcaption></figure>
+      <figure class="ri ri-thermo"><div id="retroThermo"></div><figcaption id="retroThermoCap"></figcaption></figure>
+      <figure class="ri ri-hygro"><div id="retroHygro"></div><figcaption id="retroHygroCap"></figcaption></figure>
+      <figure class="ri ri-wind"><div id="retroWind"></div><figcaption id="retroWindCap"></figcaption></figure>
+      <div class="ri ri-card"><div class="retro-card" id="retroCard"></div></div>
+    </div>
+  </section>
+
   <footer class="foot a-foot">
     <div id="updated"></div>
     <div>予報: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>（CC BY 4.0）経由で 気象庁・ECMWF・NOAA GFS・ドイツ気象局 ICON のモデルを比較。地名: <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener">BigDataCloud</a>。雨雲: 日本国内は <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" rel="noopener">気象庁 高解像度降水ナウキャスト</a>、海外は <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>。地図: © OpenStreetMap contributors。</div>
@@ -368,6 +427,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   <button type="button" data-tab="radar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 15a4 4 0 0 1-.4-8 6 6 0 0 1 11.3 1.5A3.6 3.6 0 0 1 17.5 15z"/><path d="M8 18.5l-1 2.5M12.5 18.5l-1 2.5M17 18.5l-1 2.5"/></svg><span>雨雲</span></button>
   <button type="button" data-tab="week"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17h2M11 17h2"/></svg><span>週間</span></button>
   <button type="button" data-tab="city"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span>場所</span></button>
+  <button type="button" data-tab="retro"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8.5"/><path d="M12 13l4-4.5M6.5 13h1.5M16 13h1.5M12 7.5V9"/><path d="M9.5 3h5"/></svg><span>レトロ</span></button>
 </nav>
 
 <script>
@@ -412,7 +472,7 @@ const R=v=>v==null?"—":Math.round(v);
 /* ---------- data ---------- */
 async function getJSON(url,{timeout=15000}={}){
   const ac=new AbortController(); const tm=setTimeout(()=>ac.abort(),timeout);
-  try{const r=await fetch(url,{signal:ac.signal,cache:"no-store"});if(!r.ok){const e=new Error("HTTP "+r.status);e.status=r.status;throw e;}return await r.json();}
+  try{const r=await fetch(url,{signal:ac.signal});if(!r.ok){const e=new Error("HTTP "+r.status);e.status=r.status;throw e;}return await r.json();}
   catch(e){if(e.name==="AbortError"){const t=new Error("タイムアウト");t.net=true;throw t;} if(e instanceof TypeError)e.net=true; throw e;}
   finally{clearTimeout(tm)}
 }
@@ -451,7 +511,7 @@ async function reverseName(lat,lon){
 function getGPS(){
   return new Promise((res,rej)=>{
     if(!("geolocation" in navigator))return rej({code:"unsupported"});
-    navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(3),lon:+p.coords.longitude.toFixed(3)}),e=>rej(e),{enableHighAccuracy:false,timeout:10000,maximumAge:600000});
+    navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(3),lon:+p.coords.longitude.toFixed(3)}),e=>rej(e),{enableHighAccuracy:false,timeout:8000,maximumAge:900000});
   });
 }
 
@@ -684,6 +744,7 @@ document.querySelectorAll(".ctabs button").forEach(b=>b.onclick=()=>drawChart(b.
 /* ---------- flow ---------- */
 function cur(){return view||home||DEFAULT_HOME}
 function header(){
+  const rp=document.getElementById("retroPlace"); if(rp) rp.textContent=cur().name;
   const isHome=!view;
   $("pin").hidden=!isHome;
   $("placeName").textContent=cur().name;
@@ -781,19 +842,24 @@ async function loadWeather(){
   $("refreshBtn").innerHTML='<span class="spin">↻</span> 更新';
   try{
     if(navigator.onLine===false) throw Object.assign(new Error("オフライン"),{net:true});
-    const [main,mods]=await Promise.all([fetchMain(place.lat,place.lon),fetchModels(place.lat,place.lon).catch(()=>({daily:{},hourly:{time:[]}}))]);
+    // 予報本体と4モデル比較を同時に取りに行き、本体が届いたらすぐ表示（比較は後から差し込む）
+    const modsP=fetchModels(place.lat,place.lon).catch(()=>null);
+    const main=await fetchMain(place.lat,place.lon);
     if(s!==seq)return;
     $("pageMsg").innerHTML="";
-    render(main,mods,place); renderRun(main);
-    saveCache(place,main,mods);
-    loadRadar(place.lat,place.lon);
+    const cached=loadCache(place);
+    const emptyMods={daily:{},hourly:{time:[]}};
+    render(main,(cached&&cached.mods)||emptyMods,place); renderRun(main); renderRetro(main);
+    saveCache(place,main,(cached&&cached.mods)||emptyMods);
+    maybeRadar(place);
+    modsP.then(mods=>{ if(s!==seq||!mods)return; try{render(main,mods,place);}catch(_){} saveCache(place,main,mods); });
     $("updated").textContent=`取得 ${new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}（日本時間）・ 地点 ${place.lat.toFixed(2)}, ${place.lon.toFixed(2)}`;
   }catch(e){
     if(s!==seq)return;
     const c=loadCache(place);
     const why=e.net?"通信がつながりませんでした":"予報サービスがエラーを返しました";
     if(c){
-      try{render(c.main,c.mods,place);renderRun(c.main);loadRadar(place.lat,place.lon);}catch(_){}
+      try{render(c.main,c.mods,place);renderRun(c.main);renderRetro(c.main);maybeRadar(place);}catch(_){}
       $("pageMsg").innerHTML=`<div class="msg">${why}（${esc(e.message||e)}）。${esc(new Date(c.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}))} に取得したデータを表示しています。<button class="retry" id="retryBtn">再読み込み</button></div>`;
     }else{
       $("pageMsg").innerHTML=`<div class="msg">${why}（${esc(e.message||e)}）。電波の良い場所で「再読み込み」を押してください。<button class="retry" id="retryBtn">再読み込み</button></div>`;
@@ -803,6 +869,12 @@ async function loadWeather(){
     if(e.net) window.addEventListener("online",()=>loadWeather(),{once:true});
   }finally{if(s===seq)$("refreshBtn").textContent="↻ 更新";}
 }
+// レーダーは同じ場所なら5分以内は読み直さない
+let lastRadar={k:"",t:0};
+function maybeRadar(place){const k=place.lat.toFixed(2)+","+place.lon.toFixed(2);if(k===lastRadar.k&&Date.now()-lastRadar.t<300000&&RADAR.frames.length)return;lastRadar={k,t:Date.now()};loadRadar(place.lat,place.lon);}
+// 前回のデータがあれば、通信を待たずにすぐ表示する
+function paintCached(place){const c=loadCache(place);if(!c)return false;try{render(c.main,c.mods,place);renderRun(c.main);renderRetro(c.main);$("updated").textContent="前回のデータを表示中・最新を取得しています…";return true}catch(_){return false}}
+const kmBetween=(a,b)=>{const R0=6371,dl=(b.lat-a.lat)*Math.PI/180,dn=(b.lon-a.lon)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dn/2)**2;return 2*R0*Math.asin(Math.sqrt(x))};
 async function locate(){
   $("pageMsg").innerHTML="";
   try{
@@ -814,8 +886,29 @@ async function locate(){
     $("pageMsg").innerHTML=`<div class="msg">${why}${home?"前回の現在地（"+esc(home.name)+"）":"東京都港区"}を表示しています。</div>`;
   }
 }
-async function goHome(refreshGPS){view=null;skeleton();header();if(refreshGPS){$("placeName").textContent="位置を取得中…";await locate();}await loadWeather();}
-function goCity(c){view=c;skeleton();toggleSheet(false);if(!isDesk())setTab("now");window.scrollTo({top:0});$("pageMsg").innerHTML="";loadWeather();}
+async function goHome(refreshGPS){
+  view=null;header();
+  const known=home;
+  // 前回の現在地があれば、GPSを待たずにその場所の予報を表示・取得しておく
+  if(known){ if(!paintCached(known)) skeleton(); loadWeather(); } else { skeleton(); }
+  if(!refreshGPS){ if(!known) loadWeather(); return; }
+  if(!known) $("placeName").textContent="位置を取得中…";
+  $("pageMsg").innerHTML="";
+  try{
+    const g=await getGPS();
+    if(view) return; // 途中で別の都市に切り替えた
+    const moved=!known||kmBetween(known,g)>1.5;
+    home={...g,name:moved?(known&&!moved?known.name:"現在地"):known.name};
+    if(moved){ store.set("wx.home",home); header(); if(!paintCached(home)) skeleton(); loadWeather(); }
+    // 地名はあとから書き換える
+    reverseName(g.lat,g.lon).then(n=>{ if(!n) return; home={...home,name:n}; store.set("wx.home",home); if(!view) header(); });
+  }catch(e){
+    const why=e&&e.code===1?"位置情報の利用が許可されていません。ブラウザの設定で許可すると現在地を表示できます。":"現在地を取得できませんでした。";
+    if(!known) loadWeather();
+    $("pageMsg").insertAdjacentHTML("afterbegin",`<div class="msg">${why}${known?"前回の現在地（"+esc(known.name)+"）":"東京都港区"}を表示しています。</div>`);
+  }
+}
+function goCity(c){view=c;if(!paintCached(c))skeleton();toggleSheet(false);if(!isDesk())setTab("now");window.scrollTo({top:0});$("pageMsg").innerHTML="";loadWeather();}
 
 function toggleSheet(o){$("sheet").hidden=!o;$("switchBtn").setAttribute("aria-expanded",String(o));}
 $("switchBtn").onclick=e=>{e.stopPropagation();toggleSheet($("sheet").hidden)};
@@ -840,10 +933,111 @@ $("searchForm").addEventListener("submit",async ev=>{
 let lastLoad=Date.now();
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-lastLoad>30*60000){lastLoad=Date.now();setTimeout(()=>view?loadWeather():goHome(true),1200)}});
 
+/* ---------- レトロ（アナログ計器） ---------- */
+const RP=(cx,cy,r,deg)=>{const a=deg*Math.PI/180;return [cx+r*Math.sin(a),cy-r*Math.cos(a)]};
+const f1=v=>v.toFixed(1);
+function nowIdx(main){const k=main.current.time.slice(0,13);const i=main.hourly.time.findIndex(t=>t.slice(0,13)===k);return i<0?0:i}
+const BEAUFORT=[[0.3,"静穏"],[1.6,"至軽風"],[3.4,"軽風"],[5.5,"軟風"],[8.0,"和風"],[10.8,"疾風"],[13.9,"雄風"],[17.2,"強風"],[20.8,"疾強風"],[24.5,"大強風"],[28.5,"全強風"],[32.7,"暴風"],[999,"颶風"]];
+function beaufort(ms){for(let i=0;i<BEAUFORT.length;i++)if(ms<BEAUFORT[i][0])return [i,BEAUFORT[i][1]];return [12,"颶風"]}
+function needle(cx,cy,len,tail,deg,cls,w=5){
+  return `<g class="rneedle ${cls}" data-deg="${deg}" style="transform-origin:${cx}px ${cy}px">
+    <polygon points="${cx-w/2},${cy+tail} ${cx+w/2},${cy+tail} ${cx+1},${cy-len} ${cx-1},${cy-len}" />
+    <circle cx="${cx}" cy="${cy+tail-2}" r="${w*1.1}"/></g>`;
+}
+function bezel(cx,cy,r,id){
+  return `<defs><radialGradient id="br${id}" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#f3dc9a"/><stop offset=".45" stop-color="#c39a48"/><stop offset=".8" stop-color="#8a6424"/><stop offset="1" stop-color="#5e4318"/></radialGradient>
+  <radialGradient id="fc${id}" cx="45%" cy="40%" r="75%"><stop offset="0" stop-color="#fbf4e2"/><stop offset=".85" stop-color="#efe1bf"/><stop offset="1" stop-color="#d9c79c"/></radialGradient></defs>
+  <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#br${id})"/><circle cx="${cx}" cy="${cy}" r="${r-6}" fill="#6b4a1c" opacity=".55"/>
+  <circle cx="${cx}" cy="${cy}" r="${r-9}" fill="url(#fc${id})"/>`;
+}
+function glass(cx,cy,r){return `<path d="M${cx-r*0.7},${cy-r*0.45} A${r} ${r} 0 0 1 ${cx+r*0.5},${cy-r*0.78}" stroke="#fff" stroke-opacity=".45" stroke-width="${r*0.08}" fill="none" stroke-linecap="round"/>`}
+function barometerSVG(p,prev){
+  const cx=150,cy=150,lo=960,hi=1060,A=v=>-135+(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*270;
+  let g=bezel(cx,cy,146,"b");
+  const zones=[[960,980,"暴風雨"],[980,1000,"雨"],[1000,1020,"変わりやすい"],[1020,1040,"晴"],[1040,1060,"快晴"]];
+  zones.forEach(([a,b,t],i)=>{const [x,y]=RP(cx,cy,i===2?66:70,A((a+b)/2));g+=`<text x="${x}" y="${y+5}" class="rz${i===2?" sm":""}" text-anchor="middle">${t}</text>`});
+  for(let v=lo;v<=hi;v+=2){const mj=v%10===0,[x1,y1]=RP(cx,cy,mj?110:116,A(v)),[x2,y2]=RP(cx,cy,126,A(v));g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#2b2118" stroke-width="${mj?1.8:0.8}"/>`;}
+  for(let v=lo;v<=hi;v+=10){const [x,y]=RP(cx,cy,100,A(v));g+=`<text x="${x}" y="${y+4}" class="rn" text-anchor="middle">${v}</text>`}
+  g+=`<path d="M${RP(cx,cy,128,-135).join(" ")} A128 128 0 1 1 ${RP(cx,cy,128,135).join(" ")}" fill="none" stroke="#2b2118" stroke-width="1"/>`;
+  g+=`<text x="${cx}" y="${cy+44}" class="rt" text-anchor="middle">気 圧 計</text><text x="${cx}" y="${cy+58}" class="rs" text-anchor="middle">BAROMETER · hPa</text>`;
+  g+=`<rect x="${cx-34}" y="${cy+66}" width="68" height="22" rx="3" fill="#2b2118"/><text x="${cx}" y="${cy+82}" class="rd" text-anchor="middle">${f1(p)}</text>`;
+  if(prev!=null)g+=needle(cx,cy,118,0,A(prev),"set",2.2);
+  g+=needle(cx,cy,120,26,A(p),"main",6);
+  g+=`<circle cx="${cx}" cy="${cy}" r="8" fill="url(#brb)" stroke="#5e4318"/>`+glass(cx,cy,132);
+  return `<svg viewBox="0 0 300 300" role="img" aria-label="気圧計 ${f1(p)}ヘクトパスカル">${g}</svg>`;
+}
+function thermoSVG(t,dp){
+  const top=34,bot=250,lo=-10,hi=40,Y=v=>bot-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(bot-top);
+  let g=`<defs><linearGradient id="tb" x1="0" x2="1"><stop offset="0" stop-color="#e9dcbc"/><stop offset=".5" stop-color="#f8f0dc"/><stop offset="1" stop-color="#e0cfa6"/></linearGradient>
+    <linearGradient id="tg" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".05"/><stop offset=".35" stop-color="#fff" stop-opacity=".45"/><stop offset=".55" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+  <rect x="6" y="6" width="128" height="288" rx="10" fill="#7a5530"/><rect x="12" y="12" width="116" height="276" rx="7" fill="url(#tb)"/>
+  <circle cx="70" cy="22" r="3.2" fill="#b8893b"/><circle cx="70" cy="280" r="3.2" fill="#b8893b"/>`;
+  for(let v=lo;v<=hi;v+=2){const mj=v%10===0,y=Y(v);g+=`<line x1="${mj?44:50}" x2="60" y1="${y}" y2="${y}" stroke="#2b2118" stroke-width="${mj?1.4:0.7}"/>`;if(mj)g+=`<text x="40" y="${y+4}" class="rn" text-anchor="end">${v}</text>`}
+  [14,32,50,68,86,104].forEach(F=>{const y=Y((F-32)*5/9);g+=`<line x1="80" x2="88" y1="${y}" y2="${y}" stroke="#2b2118" stroke-width="1"/><text x="92" y="${y+4}" class="rn sm">${F}</text>`});
+  g+=`<text x="40" y="26" class="rs" text-anchor="end">℃</text><text x="94" y="26" class="rs">℉</text>`;
+  g+=`<rect x="64" y="${top-8}" width="12" height="${bot-top+18}" rx="6" fill="#fffaf0" stroke="#b9a77d"/>`;
+  g+=`<g class="rmerc" style="transform-origin:70px ${bot+10}px;transform:scaleY(0)" data-scale="${(bot+10-Y(t))/(bot+10-top+4)}"><rect x="67" y="${top-4}" width="6" height="${bot+10-top+4}" fill="#a8321e"/></g>`;
+  g+=`<circle cx="70" cy="${bot+16}" r="13" fill="#a8321e"/><circle cx="66" cy="${bot+12}" r="4" fill="#fff" opacity=".45"/>`;
+  g+=`<rect x="64" y="${top-8}" width="12" height="${bot-top+18}" rx="6" fill="url(#tg)"/>`;
+  if(dp!=null){const y=Y(dp);g+=`<polygon points="78,${y} 86,${y-5} 86,${y+5}" fill="#2c4f7c"/>`}
+  return `<svg viewBox="0 0 140 300" role="img" aria-label="温度計 ${f1(t)}度、露点${dp!=null?Math.round(dp):"不明"}度">${g}</svg>`;
+}
+function hygroSVG(h){
+  const cx=100,cy=104,A=v=>-120+v/100*240;
+  let g=bezel(cx,cy,96,"h");
+  const band=(a,b,col)=>{const [x1,y1]=RP(cx,cy,70,A(a)),[x2,y2]=RP(cx,cy,70,A(b));return `<path d="M${x1} ${y1} A70 70 0 ${A(b)-A(a)>180?1:0} 1 ${x2} ${y2}" stroke="${col}" stroke-width="9" fill="none" opacity=".8"/>`};
+  g+=band(0,40,"#c99a2e")+band(40,65,"#4f6b2d")+band(65,100,"#2c4f7c");
+  for(let v=0;v<=100;v+=5){const mj=v%20===0,[x1,y1]=RP(cx,cy,mj?74:78,A(v)),[x2,y2]=RP(cx,cy,84,A(v));g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#2b2118" stroke-width="${mj?1.5:.7}"/>`;if(mj){const [x,y]=RP(cx,cy,56,A(v));g+=`<text x="${x}" y="${y+4}" class="rn sm" text-anchor="middle">${v}</text>`}}
+  [[20,"乾燥"],[52,"快適"],[82,"多湿"]].forEach(([v,t])=>{const [x,y]=RP(cx,cy,38,A(v));g+=`<text x="${x}" y="${y+4}" class="rz sm" text-anchor="middle">${t}</text>`});
+  g+=`<text x="${cx}" y="${cy+44}" class="rt sm" text-anchor="middle">湿 度 計</text><text x="${cx}" y="${cy+62}" class="rv" text-anchor="middle">${Math.round(h)}%</text>`;
+  g+=needle(cx,cy,78,16,A(h),"main",4.5)+`<circle cx="${cx}" cy="${cy}" r="6" fill="url(#brh)" stroke="#5e4318"/>`+glass(cx,cy,86);
+  return `<svg viewBox="0 0 200 200" role="img" aria-label="湿度計 ${Math.round(h)}パーセント">${g}</svg>`;
+}
+function windSVG(ms,dir){
+  const cx=100,cy=100;let g=bezel(cx,cy,96,"w");
+  for(let i=0;i<32;i++){const mj=i%2===0,[x1,y1]=RP(cx,cy,mj?74:78,i*11.25),[x2,y2]=RP(cx,cy,84,i*11.25);g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#2b2118" stroke-width="${mj?1.2:.6}"/>`}
+  const star=(r1,r2,n,rot,fill)=>{let pts=[];for(let i=0;i<n*2;i++){const [x,y]=RP(cx,cy,i%2?r2:r1,rot+i*180/n);pts.push(x.toFixed(1)+","+y.toFixed(1))}return `<polygon points="${pts.join(" ")}" fill="${fill}" stroke="#2b2118" stroke-width=".6"/>`};
+  g+=star(46,12,4,45,"#e3d3ac")+star(62,14,4,0,"#c9b07a");
+  [["北",0,"#a8321e"],["東",90,"#2b2118"],["南",180,"#2b2118"],["西",270,"#2b2118"]].forEach(([t,d,c])=>{const [x,y]=RP(cx,cy,68,d);g+=`<text x="${x}" y="${y+5}" class="rz" text-anchor="middle" style="fill:${c}">${t}</text>`});
+  // 風が吹いてくる方向を矢の先で示す
+  g+=`<g class="rneedle main" data-deg="${dir}" style="transform-origin:${cx}px ${cy}px"><polygon points="${cx},${cy-74} ${cx+7},${cy-56} ${cx+2},${cy-56} ${cx+2},${cy+50} ${cx+9},${cy+66} ${cx},${cy+58} ${cx-9},${cy+66} ${cx-2},${cy+50} ${cx-2},${cy-56} ${cx-7},${cy-56}" fill="#2b2118"/></g>`;
+  g+=`<circle cx="${cx}" cy="${cy}" r="6" fill="url(#brw)" stroke="#5e4318"/>`+glass(cx,cy,86);
+  return `<svg viewBox="0 0 200 200" role="img" aria-label="${dirJ(dir)}の風 毎秒${f1(ms)}メートル">${g}</svg>`;
+}
+function renderRetro(main){
+  const c=main.current,h=main.hourly,d=main.daily,ni=nowIdx(main);
+  const p=c.pressure_msl, prev=h.pressure_msl[ni-3]??null, dlt=prev!=null?p-prev:0;
+  const [bf,bn]=beaufort(c.wind_speed_10m||0);
+  const tend=dlt<=-1?"下がっています":dlt>=1?"上がっています":"ほぼ変わりません";
+  const forecast=dlt<=-2?"天気は下り坂":dlt>=2?"天気は回復に向かう":p<1000?"雨になりやすい気圧":p>1020?"安定した晴れ模様":"大きな変化なし";
+  $("retroBaro").innerHTML=barometerSVG(p,prev);
+  $("retroBaroCap").innerHTML=`<b>${f1(p)}</b> hPa　3時間前より ${dlt>=0?"+":"−"}${f1(Math.abs(dlt))}（${tend}）<br><span>金の針＝3時間前　「${forecast}」</span>`;
+  $("retroThermo").innerHTML=thermoSVG(c.temperature_2m,c.dew_point_2m);
+  $("retroThermoCap").innerHTML=`気温 <b>${f1(c.temperature_2m)}</b>℃<br><span>体感 ${R(c.apparent_temperature)}℃ ・ <b style="font-size:inherit;color:#9cc3f0">◀</b>露点 ${R(c.dew_point_2m)}℃</span>`;
+  $("retroHygro").innerHTML=hygroSVG(c.relative_humidity_2m);
+  $("retroHygroCap").innerHTML=`湿度 <b>${R(c.relative_humidity_2m)}</b>%`;
+  $("retroWind").innerHTML=windSVG(c.wind_speed_10m||0,c.wind_direction_10m||0);
+  $("retroWindCap").innerHTML=`${dirJ(c.wind_direction_10m)}の風 <b>${f1(c.wind_speed_10m||0)}</b>m/s<br><span>風力${bf}（${bn}）</span>`;
+  const line=i=>`${esc(wmo(d.weather_code[i])[0])}　最高 ${R(d.temperature_2m_max[i])}℃ ／ 最低 ${R(d.temperature_2m_min[i])}℃　降水 ${d.precipitation_probability_max[i]??"—"}%`;
+  const now=new Date(); const wd="日月火水木金土";
+  $("retroCard").innerHTML=`<div class="rc-h">天 気 予 報</div>
+    <div class="rc-d">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${wd[now.getDay()]}）${String(now.getHours()).padStart(2,"0")}時${String(now.getMinutes()).padStart(2,"0")}分</div>
+    <div class="rc-l"><span>本日</span>${line(0)}</div><div class="rc-l"><span>明日</span>${line(1)}</div>
+    <div class="rc-l"><span>いま</span>${esc(wmo(c.weather_code)[0])}　${f1(c.temperature_2m)}℃　${f1(p)}hPa</div>
+    <div class="rc-f">― <span id="retroPlace">${esc(cur().name)}</span> ―</div>`;
+  if(retroVisible())swingNeedles();
+}
+function retroVisible(){const el=document.querySelector(".a-retro");return el&&el.offsetParent!==null}
+function swingNeedles(){
+  const els=document.querySelectorAll(".a-retro .rneedle,.a-retro .rmerc");
+  els.forEach(el=>{el.style.transition="none";el.style.transform=el.classList.contains("rmerc")?"scaleY(0)":"rotate(-135deg)";});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>els.forEach(el=>{el.style.transition="";el.style.transform=el.classList.contains("rmerc")?`scaleY(${el.dataset.scale})`:`rotate(${el.dataset.deg}deg)`;})));
+}
+
 /* ---------- 下部タブ ---------- */
-const TABS=["now","radar","week","city"];
+const TABS=["now","radar","week","city","retro"];
 const isDesk=()=>matchMedia("(min-width:1024px)").matches;
-const TAB_TARGET={now:".a-run",radar:".a-radar",week:".a-week"};
+const TAB_TARGET={now:".a-run",radar:".a-radar",week:".a-week",retro:".a-retro"};
 function setTab(t,{scroll=true}={}){
   if(!TABS.includes(t))t="now";
   document.querySelectorAll("#tabbar button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===t?"page":"false"));
@@ -855,6 +1049,7 @@ function setTab(t,{scroll=true}={}){
   document.body.dataset.tab=t;
   if(scroll)window.scrollTo({top:0});
   if(t==="radar"&&RADAR.map)setTimeout(()=>RADAR.map.invalidateSize(),60);
+  if(t==="retro")setTimeout(swingNeedles,30);
   if(t==="city")setTimeout(()=>$("searchInput").focus({preventScroll:true}),50);
   try{history.replaceState(null,"",t==="now"?location.pathname+location.search:"#"+t)}catch(_){}
 }
